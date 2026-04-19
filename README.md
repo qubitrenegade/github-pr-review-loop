@@ -1,8 +1,9 @@
 # github-pr-review-loop
 
 A Claude Code skill for running a disciplined GitHub PR review loop: triage
-every reviewer comment into **apply / dismiss / clarify**, dismiss
-hallucinations with empirical evidence, and stop chasing rounds when Copilot
+every reviewer comment into **apply / dismiss / clarify / defer**, dismiss
+hallucinations with empirical evidence, resolve every thread after replying,
+verify CI is green before merging, and stop chasing rounds when Copilot
 starts repeating itself. Scales from one PR to many with parallel worktrees.
 
 This skill encodes the habits from shipping [clickwork
@@ -22,9 +23,11 @@ PR reviewer turned on.
 
 ## What the skill teaches
 
-- **Triage by category.** Every review finding is one of three things:
-  apply, dismiss, or clarify. Each has a template and a commit-SHA reply
-  convention so the review thread stays navigable.
+- **Triage by category.** Every review finding is one of four things:
+  apply (fix + cite commit SHA), dismiss (reply with empirical evidence),
+  clarify (ask when ambiguous), or defer (valid but out of scope — file a
+  follow-up issue and link it). Each has a template so the review thread
+  stays navigable.
 - **Empirical dismissal.** Copilot hallucinates. Before taking its word,
   `grep -c`, `python -c`, or a test run is cheap. The skill prescribes this
   check on every "this looks broken" claim.
@@ -92,9 +95,9 @@ skills/
 └── github-pr-review-loop/
     ├── SKILL.md                            # Core prompt (loaded when invoked)
     └── references/
-        ├── triage-patterns.md              # apply / dismiss / clarify templates
-        ├── graphql-snippets.md             # requestReviews + comment queries
-        ├── stop-conditions.md              # when to stop chasing
+        ├── triage-patterns.md              # apply / dismiss / clarify / defer templates + resolve discipline
+        ├── graphql-snippets.md             # requestReviews + comment queries + thread resolution + bot-ID discovery
+        ├── stop-conditions.md              # when to stop chasing (incl. "CI must be green" precondition)
         ├── wave-orchestration.md           # multi-PR parallel scaling
         └── case-study-clickwork-1.0.md     # concrete 24-issue run
 ```

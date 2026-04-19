@@ -1,10 +1,12 @@
 # Stop conditions
 
-When to stop chasing a Copilot review loop. Concrete signals, not
+When to stop chasing a Copilot review loop, and the merge gate that
+still has to clear before you actually merge. Concrete signals, not
 arbitrary thresholds.
 
 ## Contents
 
+- Merge precondition: required CI checks are green
 - Primary stop: zero new findings on a Copilot pass
 - Complement: zero unresolved conversation threads
 - Secondary stop: Copilot repeats itself
@@ -12,6 +14,38 @@ arbitrary thresholds.
 - User escape hatch
 - Failure-mode stops
 - Anti-patterns (don't stop for these reasons)
+
+## Merge precondition: required CI checks are green
+
+Before any stop condition becomes a merge decision, **every required
+CI check on the PR head must be in `SUCCESS` (or `SKIPPED`) state.**
+A clean Copilot pass on red CI is not a merge — it's permission to
+stop chasing review comments while the CI problem still needs
+solving.
+
+```bash
+gh pr view <N> --repo <owner>/<repo> --json statusCheckRollup --jq \
+  '{failed: [.statusCheckRollup[]? | select(.conclusion=="FAILURE") | .name],
+    pending: [.statusCheckRollup[]? | select(.status!="COMPLETED") | .name],
+    passing: ([.statusCheckRollup[]? | select(.conclusion=="SUCCESS")] | length)}'
+```
+
+**Interpret:**
+
+- `failed == [] && pending == []` → CI is green, merge gate is
+  clear.
+- `failed != []` → investigate. Two cases:
+  - Failure is specific to this PR's diff → fix it (code, test, or
+    workflow in the same PR).
+  - Failure reproduces on `main` unchanged → pre-existing infra
+    breakage. Fix the infra in a dedicated PR, merge that, then CI
+    on this PR should go green. DO NOT admin-merge past it.
+- `pending != []` → wait. Don't merge mid-CI. Schedule another
+  wake-up.
+
+See [case-study-clickwork-1.0.md](case-study-clickwork-1.0.md) for
+the Release-smoke episode — concrete example of "failure reproduces
+on main → fix the infra first, don't bypass".
 
 ## Primary stop: zero new findings
 

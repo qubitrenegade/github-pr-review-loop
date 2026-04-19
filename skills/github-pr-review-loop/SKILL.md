@@ -1,6 +1,6 @@
 ---
 name: github-pr-review-loop
-description: Drives a GitHub pull request through its Copilot review loop to merge. Triages each reviewer comment into apply (fix + cite commit SHA), dismiss (reply with empirical evidence), or clarify. Uses the GitHub GraphQL requestReviews mutation to re-trigger Copilot after pushing fixes. Stops when Copilot returns zero new findings or starts repeating itself. Scales to multi-PR batch rollouts via parallel worktrees and scheduled wake-ups. Use when a PR has an open Copilot review that needs to be driven to merge, when a batch of related issues needs to be shipped across many PRs, or when deciding whether a Copilot finding is legitimate or a hallucination.
+description: Drives a GitHub pull request through its Copilot review loop to merge. Triages each reviewer comment into apply (fix + cite commit SHA), dismiss (reply with empirical evidence), clarify (ask when ambiguous), or defer (valid but out of scope — file a follow-up issue). Uses the GitHub GraphQL requestReviews mutation to re-trigger Copilot after pushing fixes, and resolveReviewThread to close each thread loop. Checks every required CI check is green before considering merge. Stops when Copilot returns zero new findings or starts repeating itself. Scales to multi-PR batch rollouts via parallel worktrees and scheduled wake-ups. Use when a PR has an open Copilot review that needs to be driven to merge, when a batch of related issues needs to be shipped across many PRs, or when deciding whether a Copilot finding is legitimate or a hallucination.
 ---
 
 # GitHub PR Review Loop
@@ -22,9 +22,9 @@ mutation, stop when the signal goes quiet.
 If the repo has no Copilot reviewer or the PR has no reviewer assigned,
 this skill doesn't apply — standard PR-review habits are fine.
 
-## The triage — apply, dismiss, or clarify
+## The triage — apply, dismiss, clarify, or defer
 
-Every Copilot inline comment is one of three things. Decide explicitly;
+Every Copilot inline comment is one of four things. Decide explicitly;
 don't guess.
 
 **Apply** — the finding is real. Fix it in a follow-up commit, push,
@@ -98,7 +98,7 @@ That does nothing for bot reviewers. The only mechanism that actually
 re-triggers Copilot is the GraphQL `requestReviews` mutation:
 
 ```bash
-BOT_ID="BOT_kgDOCnlnWA"  # Copilot's global node ID on github.com
+BOT_ID="BOT_kgDOCnlnWA"  # Copilot's global node ID on github.com (see below)
 PR_ID=$(gh pr view <PR_NUM> --repo <OWNER/REPO> --json id --jq .id)
 gh api graphql -f query='
   mutation($prId: ID!, $botId: ID!) {
@@ -108,9 +108,12 @@ gh api graphql -f query='
   }' -f prId="$PR_ID" -f botId="$BOT_ID"
 ```
 
-See [references/graphql-snippets.md](references/graphql-snippets.md) for
-the full GraphQL catalog (list Copilot comments, batch-reply, dismiss
-outstanding).
+`BOT_kgDOCnlnWA` is the observed github.com value. On GitHub
+Enterprise or if the ID has rotated, discover it dynamically from an
+existing Copilot review — see
+[references/graphql-snippets.md](references/graphql-snippets.md)
+for the discovery query and the rest of the catalog (list comments,
+batch-reply, list/resolve threads, check CI status).
 
 Re-request **after** your fix commits have pushed, not before. Copilot
 reviews against the current HEAD of the PR branch; requesting a review
@@ -121,16 +124,49 @@ before your commit lands wastes a pass.
 For a single PR, the loop is this. Repeat until a stop condition fires.
 
 1. Read the latest Copilot review's inline comments.
-2. Triage each comment (apply / dismiss / clarify).
+2. Triage each comment (apply / dismiss / clarify / defer).
 3. Commit all "apply" fixes in one push (batch them — multiple reply
    cycles per push is wasteful).
-4. Post inline replies with commit SHAs / empirical dismissals.
+4. Post inline replies with commit SHAs / empirical dismissals /
+   follow-up issue links. Resolve each thread after replying.
 5. Re-request review via GraphQL mutation.
 6. Wait. Use `ScheduleWakeup` (Claude Code) or a cron / cadence —
    never busy-poll. 4-5 min is a sensible interval.
 7. On wake-up, check status: any new CI failures? any new inline
    comments? any already-addressed comments Copilot re-raised?
 8. Return to step 1 with the new findings, OR fire a stop condition.
+
+## Before merging: CI must be green
+
+**A stop condition firing is not permission to merge — it's permission
+to stop chasing Copilot.** The merge gate is separate: every required
+CI check on the PR head must be in `SUCCESS` or `SKIPPED` state.
+
+```bash
+gh pr view <PR_NUM> --repo <OWNER/REPO> --json statusCheckRollup --jq \
+  '{failed: [.statusCheckRollup[]? | select(.conclusion=="FAILURE") | .name],
+    pending: [.statusCheckRollup[]? | select(.status!="COMPLETED") | .name]}'
+```
+
+If `failed` is non-empty: either fix the code (likely — the CI is
+telling you something real) or fix the workflow (if the failure
+reproduces on `main` unchanged, it's pre-existing infra, not this
+PR's fault — but don't merge past it; file or fix the infra in a
+dedicated PR first).
+
+If `pending` is non-empty: wait. Don't merge mid-CI. Schedule another
+wake-up.
+
+Both empty → CI is green → merge is gated only on Copilot signal
+(stop conditions) and human approval if required.
+
+**Never use `gh pr merge --admin` to bypass a failing required check
+just because "main is also failing so it's not my PR's fault".** If
+main is red for the same reason, main shouldn't merge either —
+that's a broken gate, fix it first. See
+[references/stop-conditions.md](references/stop-conditions.md) under
+"Failure-mode stops" for the clickwork Release-smoke episode that
+taught this lesson the hard way.
 
 ## Stop conditions
 

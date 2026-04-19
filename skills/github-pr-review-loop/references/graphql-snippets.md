@@ -19,14 +19,50 @@ API. All shell-safe; all assume `gh` is authenticated.
 
 ## Copilot's bot ID
 
-GitHub's Copilot PR reviewer has a stable global node ID:
+On github.com, Copilot's PR reviewer is a `Bot` account (REST
+`user.type = "Bot"`, `user.login = "Copilot"`) with this global node
+ID:
 
 ```
 BOT_kgDOCnlnWA
 ```
 
+Observed stable across the clickwork 1.0 cycle (Apr 2026). GraphQL
+node IDs are opaque implementation details in principle — the skill
+treats this value as the github.com default and provides a discovery
+helper below for anyone on GitHub Enterprise, a different instance,
+or a future github.com where the ID has rotated.
+
 Use it in the `botIds` field of `requestReviews`. Do NOT pass it as
 `userIds` — Copilot is a bot, not a user, and userIds will 404.
+
+### Discovering the bot ID at runtime
+
+If `BOT_kgDOCnlnWA` doesn't work (wrong instance, rotated ID, etc.),
+look it up from an existing Copilot review on any PR in the repo:
+
+```bash
+gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviews(first: 10) {
+          nodes {
+            author {
+              __typename
+              ... on Bot { id login }
+              ... on User { id login }
+            }
+          }
+        }
+      }
+    }
+  }' -F owner=<owner> -F name=<repo> -F number=<pr-with-copilot-review> \
+  --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | {id, login}'
+```
+
+Any PR that has already been reviewed by Copilot will work. Save the
+resulting `id` as your `BOT_ID` for the `requestReviews` mutation.
 
 ## Re-request review after a push
 
