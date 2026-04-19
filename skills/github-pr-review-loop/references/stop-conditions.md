@@ -6,6 +6,7 @@ arbitrary thresholds.
 ## Contents
 
 - Primary stop: zero new findings on a Copilot pass
+- Complement: zero unresolved conversation threads
 - Secondary stop: Copilot repeats itself
 - Tertiary stop: suggestion volume dries up
 - User escape hatch
@@ -35,6 +36,36 @@ If that count is 0, the latest pass was clean. Merge when you're ready.
 Caveat: the count can be 0 because Copilot hasn't actually reviewed
 since your last push. Confirm `LAST` is newer than your most recent
 commit's timestamp before trusting the zero.
+
+## Complement: zero unresolved conversation threads
+
+The "zero new comments" signal is about INCOMING findings. The
+complementary signal is about OUTGOING ones: every thread you
+engaged with has been resolved. A PR with 0 new findings AND 0
+unresolved threads is the cleanest merge state.
+
+```bash
+gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes { isResolved }
+        }
+      }
+    }
+  }' -F owner=<owner> -F name=<repo> -F number=<N> \
+  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
+```
+
+Zero here means every thread on the PR has been explicitly closed
+(fixed, dismissed with evidence, deferred with issue, or clarified
++ acted on). Humans skimming the PR can trust that nothing slipped.
+
+If this count is >0 but the "new findings" count is 0, you have
+open threads you didn't resolve. Either resolve them now (if they
+were addressed and you just forgot) or go back and act on them
+(if they're actually pending).
 
 ## Secondary stop: Copilot repeats itself
 

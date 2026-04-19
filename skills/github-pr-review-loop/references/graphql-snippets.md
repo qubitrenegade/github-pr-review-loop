@@ -9,6 +9,9 @@ API. All shell-safe; all assume `gh` is authenticated.
 - Re-request Copilot review after a push
 - List a PR's inline comments (all, or latest round only)
 - Reply to a specific inline comment
+- List review threads with their resolved state + thread IDs
+- Resolve a review thread after replying
+- Bulk-resolve all threads you've already replied to
 - Check which reviews exist and when
 - Check CI status on the current PR head
 - Get PR's GraphQL node ID
@@ -95,6 +98,114 @@ reply 3106073129 "Fixed in acc31d3 — stub now forwards non-clickwork queries t
 reply 3106083785 "Fixed in 0e9fc99 — switched to git+https."
 reply 3106088847 "Dismissing — see evidence: \`grep -c common-footguns docs/LLM_REFERENCE.md\` returns 1."
 ```
+
+## List review threads with resolved state
+
+Threads are the grouping above individual inline comments — each
+thread has an `isResolved` flag that drives the PR's "unresolved
+conversations" counter. To work with thread resolution you need the
+thread ID (not the comment ID).
+
+```bash
+OWNER=<owner>
+REPO=<repo>
+PR_NUM=<pr-number>
+
+gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes {
+            id
+            isResolved
+            comments(first: 5) {
+              nodes {
+                id
+                author { login }
+                body
+              }
+            }
+          }
+        }
+      }
+    }
+  }' -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUM" \
+  --jq '.data.repository.pullRequest.reviewThreads.nodes[] | {id, isResolved, first_author: .comments.nodes[0].author.login, first_body: .comments.nodes[0].body[0:100]}'
+```
+
+Shows each thread's ID, whether it's resolved, and the opener's
+login + first 100 chars of their comment (enough to map thread IDs
+to the findings you're tracking).
+
+## Resolve a review thread after replying
+
+After you've posted your reply (apply SHA / dismiss evidence / defer
++ issue link), mark the thread resolved:
+
+```bash
+THREAD_ID=<from reviewThreads query above>
+gh api graphql -f query='
+  mutation($threadId: ID!) {
+    resolveReviewThread(input: {threadId: $threadId}) {
+      thread { isResolved }
+    }
+  }' -f threadId="$THREAD_ID"
+```
+
+Expected response:
+
+```json
+{"data":{"resolveReviewThread":{"thread":{"isResolved":true}}}}
+```
+
+To unresolve (rare — usually when reopening a debate):
+
+```bash
+gh api graphql -f query='
+  mutation($threadId: ID!) {
+    unresolveReviewThread(input: {threadId: $threadId}) {
+      thread { isResolved }
+    }
+  }' -f threadId="$THREAD_ID"
+```
+
+## Bulk-resolve all threads you've already replied to
+
+Common case after a round of fixes: you've replied to 6 threads
+with apply SHAs, now you want to resolve them all in one shot.
+
+```bash
+OWNER=<owner>; REPO=<repo>; PR_NUM=<N>; ME=<your-github-login>
+
+# 1. Get all unresolved threads
+UNRESOLVED=$(gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes { id isResolved comments(first: 20) { nodes { author { login } } } }
+        }
+      }
+    }
+  }' -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUM" \
+  --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select([.comments.nodes[].author.login] | any(. == "'"$ME"'")) | .id')
+
+# 2. Resolve each
+for tid in $UNRESOLVED; do
+  gh api graphql -f query='
+    mutation($threadId: ID!) {
+      resolveReviewThread(input: {threadId: $threadId}) {
+        thread { isResolved }
+      }
+    }' -f threadId="$tid" >/dev/null
+  echo "Resolved $tid"
+done
+```
+
+The filter `any(author == $ME)` limits resolution to threads YOU
+replied on. Don't bulk-resolve threads you haven't actually engaged
+with; that's drive-by closing without evidence.
 
 ## Check which reviews exist
 

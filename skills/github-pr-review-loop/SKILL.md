@@ -54,6 +54,43 @@ the thread rather than guessing. Usually a one-liner is enough:
 > `ConfigError` already names the key and the offending path; I'm
 > not sure which surface you want changed.
 
+**Defer** — the finding is correct but fixing it is out of scope for
+the current PR. File a follow-up issue, link it in the reply, move
+on. Example: Copilot flags a subtle race condition in code the PR
+touches but doesn't change; the right fix is a dedicated cycle with
+its own tests, not a drive-by patch in a PR focused on something else.
+
+> Valid concern. Filed as #N for a dedicated cycle; out of scope
+> for this PR which is focused on <X>. The proposed change would
+> <consequence outside this PR's scope>.
+
+`Defer` is a special case of `Apply` where the "apply" happens in a
+separate PR. Same discipline: evidence that the finding is real,
+explicit link to the follow-up so it isn't forgotten.
+
+## After replying, resolve the conversation
+
+Every review-comment thread on a PR has a "Resolve conversation"
+button in the GitHub UI (and a `resolveReviewThread` GraphQL
+mutation — see `references/graphql-snippets.md`). After you reply
+with an apply-SHA, a dismissal, or a clarify question the reviewer
+answers, **mark the thread resolved**. Three reasons:
+
+- The PR's "unresolved conversations" count is a stop-condition
+  signal all by itself. If it's 0, reviewers skimming the PR can
+  trust that every thread was closed loop.
+- A resolved thread collapses by default in the UI, so when you or
+  a human reviewer scroll the PR later, you only see threads that
+  still need attention.
+- It's the same muscle memory as "close an issue" when the work is
+  done. Orphaned open threads rot.
+
+For `Clarify`, resolve only after the reviewer answers and you've
+either Applied or Dismissed the answer. For `Defer`, resolve after
+filing the follow-up issue and linking it — the current PR's thread
+is closed because its disposition is settled, even if the fix lives
+elsewhere.
+
 ## How to re-trigger review after pushing fixes
 
 **Never @-mention the reviewer in a comment to re-request review.**
