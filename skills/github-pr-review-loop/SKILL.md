@@ -132,14 +132,20 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 2. Triage each comment (apply / dismiss / clarify / defer).
 3. Commit all "apply" fixes in one push (batch them — multiple reply
    cycles per push is wasteful).
-4. Post inline replies with commit SHAs / empirical dismissals /
+4. **Sweep before pushing** — grep for any variable, path, or
+   placeholder your fix renamed or restructured, and update every
+   dangling reference. Otherwise the next round catches the
+   dangling reference as its own finding and you cascade into an
+   extra round. See [references/triage-patterns.md](references/triage-patterns.md)
+   under "Sweep before you push" for the pattern.
+5. Post inline replies with commit SHAs / empirical dismissals /
    follow-up issue links. Resolve each thread after replying.
-5. Re-request review via GraphQL mutation.
-6. Wait. Use `ScheduleWakeup` (Claude Code) or a cron / cadence —
+6. Re-request review via GraphQL mutation.
+7. Wait. Use `ScheduleWakeup` (Claude Code) or a cron / cadence —
    never busy-poll. 4-5 min is a sensible interval.
-7. On wake-up, check status: any new CI failures? any new inline
+8. On wake-up, check status: any new CI failures? any new inline
    comments? any already-addressed comments Copilot re-raised?
-8. Return to step 1 with the new findings, OR fire a stop condition.
+9. Return to step 1 with the new findings, OR fire a stop condition.
 
 ## Before merging: CI must be green
 

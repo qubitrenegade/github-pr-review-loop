@@ -216,12 +216,57 @@ thread coherent:
 - Write triage decisions next to each (apply / dismiss / clarify / defer).
 - Apply all the "apply" fixes, group by theme if sensible.
 - Commit once (or with semantic boundaries: fix, docs, style).
-- Push.
+- **Sweep before you push** (see below).
 - Post all replies in one pass.
 - Re-request review once.
 
 Pushing a commit for each finding individually multiplies the Copilot
 rounds and sends the same diff through N reviews. Wasteful.
+
+### Sweep before you push
+
+When a fix renames a variable, changes a path convention, restructures
+a code block, or alters a placeholder style, grep the whole file (and
+adjacent files in the same skill/directory) for the **old** name /
+path / convention. Copilot will not see the dangling reference as
+"the fix is wrong" — it will see it as an independent bug, and you
+will chase it next round.
+
+Examples where this matters:
+
+- **Renamed a shell variable** (`REPO` → `OWNER/NAME`). Grep for
+  `$REPO`, `\$REPO`, `${REPO}` across every file the refactor
+  touched AND every file that imports its conventions.
+- **Changed a placeholder quoting style** (`<owner>` → `"<owner>"`).
+  Grep for unquoted angle-bracket occurrences in the same section
+  AND in any snippets that copy-paste from the style you just
+  updated.
+- **Renamed a heading, anchor, or file**. Grep for `#old-anchor`
+  and for the old filename; fix every reference before pushing.
+- **Removed or moved a code block's variable definitions**. Every
+  downstream reference to those vars in the same document becomes
+  dangling — sweep for them.
+
+Concrete pattern:
+
+```bash
+# After your fix commit, before git push
+git diff HEAD~1 --name-only | while read f; do
+  echo "=== $f ==="
+  grep -n 'OLD_NAME\|<old_placeholder>\|#old-anchor' "$f"
+done
+```
+
+Why this belongs in the loop: late-round findings often cascade from
+fixes (round N's fix → round N+1 catches a dangling reference the
+fix missed). Each cascade wastes a round. A 60-second sweep before
+push prevents the cascade.
+
+Heuristic for when the recursion is done: if TWO consecutive rounds
+find zero new issues AND no files have changed between them,
+Copilot has actually converged. The skill's "one clean pass" stop
+condition is usually right, but on large refactors a second clean
+pass with no change-surface between them is a stronger signal.
 
 ## Special cases
 
