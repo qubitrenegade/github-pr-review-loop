@@ -202,6 +202,65 @@ at high volume, thread has devolved, etc.).
   already replied to the original thread. Point at the first reply and
   move on.
 
+## Keep PRs small and focused
+
+Every principle above works better on small PRs. Why:
+
+- Copilot review quality degrades on large diffs — the reviewer has
+  more surface to skim, produces more low-signal findings, and the
+  round count goes up without the signal going up.
+- Smaller PRs mean shorter review loops (fewer findings per round,
+  fewer rounds to converge), so throughput goes up even though PR
+  count does too.
+- A focused PR has a single clear Defer boundary — "this PR is
+  about X; anything else → follow-up issue". Mega-PRs blur the
+  boundary and Copilot's scope-related suggestions become harder
+  to triage.
+- Reverts and bisects are cheap on small PRs, expensive on big ones.
+
+When a wave's plan shows one issue ballooning past ~300 lines of
+diff or touching more than 3-4 files (outside of test files), split
+it into follow-up issues before writing code, not after. See
+[references/wave-orchestration.md](references/wave-orchestration.md)
+for planning patterns and
+[references/triage-patterns.md](references/triage-patterns.md)
+under "Defer" for the right-sized escape hatch once you're mid-PR
+and a finding would balloon the scope.
+
+## Plan the waves before opening PRs
+
+For any multi-PR rollout, the discipline starts before the first
+implementation PR: **write the roadmap as its own PR, merge it,
+write each wave plan as its own PR, merge each**. Every layer gets
+reviewed before code lands under it.
+
+- Roadmap PR pins wave structure, parallelism policy, release
+  target, any cross-cutting decisions.
+- Each wave's plan PR pins per-issue API shapes, branch names,
+  TDD targets, and any wave-internal merge-order constraints.
+- Only after the wave plan merges do the implementation PRs open.
+
+This prevents the expensive mid-wave pivot where three subagents
+have shipped diffs that contradict each other because the API
+shape wasn't locked. It also means the maintainer reviews intent
+at plan time — cheap — rather than discovering it in code review
+of 5 concurrent PRs — expensive.
+
+See [references/wave-orchestration.md](references/wave-orchestration.md)
+for the full hierarchy (roadmap → wave plan → implementation PRs)
+with concrete examples from the clickwork 1.0 cycle.
+
+### Pairs well with superpowers:brainstorming
+
+The "lock API shape upfront" part of wave planning is a
+brainstorming exercise: what are the open questions, what are the
+A/B/C options for each, which does the maintainer pick. The
+`superpowers:brainstorming` skill is built for exactly this kind
+of up-front design conversation — invoke it before writing the
+roadmap or wave plan PR to surface the open decisions and get them
+answered before code starts. This skill's review loop then drives
+the resulting PRs to merge.
+
 ## Scaling to multiple PRs
 
 The same loop runs for each PR in a multi-PR rollout. What changes is

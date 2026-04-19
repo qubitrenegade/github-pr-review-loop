@@ -38,9 +38,27 @@ PR reviewer turned on.
 - **Stop conditions that aren't arbitrary.** One clean Copilot pass (zero
   new findings) is the real signal, not some arbitrary "round 4 threshold".
   The skill lists the signals and an escape hatch.
+- **Small, focused PRs over megas.** Copilot review quality degrades
+  on large diffs — more low-signal findings, more rounds, worse
+  throughput. The skill treats "can this be split?" as a live
+  question during wave planning and "should this be Deferred?" as a
+  live question during the loop.
+- **Plan the waves before opening implementation PRs.** For multi-PR
+  rollouts, roadmap → per-wave plan → implementation PRs, each layer
+  reviewed and merged before the layer below opens. Prevents mid-wave
+  pivots from mismatched API shapes across concurrent branches.
 - **Wave orchestration at scale.** For multi-PR rollouts: parallelism
   policy, worktree-per-PR discipline, scheduled wake-ups instead of
   busy-waiting, overlap prep with Copilot bake time.
+
+## Related skills
+
+Pairs well with `superpowers:brainstorming` (if you have the
+superpowers plugin installed) for the up-front design work the
+wave-planning layer asks for — invoke it before writing the
+roadmap or per-wave plan PR to lock in API shapes and A/B/C
+decisions while they're still cheap to change. This skill then
+drives the resulting PRs to merge.
 
 ## Install
 

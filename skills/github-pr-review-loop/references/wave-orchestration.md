@@ -84,9 +84,27 @@ answers:
 - Branch name per issue (conventional: `<type>/<short-desc>-<issue-num>`).
 - TDD target per issue (red-test exists and fails; what's green?).
 - Any wave-internal merge-order constraints.
+- **Size check.** If an issue's scope looks like it will produce a
+  PR over ~300 lines of diff or touching more than 3-4 non-test
+  files, split it now. Smaller PRs get higher-signal Copilot
+  reviews, converge in fewer rounds, and bisect cheaply. This is
+  the last opportunity to split cheaply; once code is landing the
+  only escape is Defer.
 
 Review + merge this plan before opening any implementation PR from the
 wave.
+
+### Brainstorming the plan
+
+The per-wave plan is where the maintainer answers A/B/C questions
+on API shape, error ergonomics, deprecation runway, etc. If you
+have the `superpowers:brainstorming` skill installed, invoke it
+before writing the plan PR — it's built for exactly this kind of
+up-front design conversation and produces the kind of "here are
+the three options, here's what I picked, here's why" artifact that
+the plan PR should contain. This skill (github-pr-review-loop)
+then drives the plan PR through its own review loop and any
+resulting implementation PRs through theirs.
 
 ## Worktree-per-PR discipline
 
