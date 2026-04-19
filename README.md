@@ -85,10 +85,15 @@ If you just want the skill content and don't care about the plugin
 wrapper, copy the skill directory directly into your Claude config:
 
 ```bash
-# Personal (applies to every project)
+# Personal (applies to every project). Ensure the skills dir exists
+# first — a fresh Claude Code install won't have it yet, and cp -r
+# into a missing dir just creates ~/.claude/skills as a copy of the
+# source rather than putting the source inside ~/.claude/skills/.
+mkdir -p ~/.claude/skills
 cp -r skills/github-pr-review-loop ~/.claude/skills/
 
 # Or project-local (applies only to the current repo)
+mkdir -p .claude/skills
 cp -r skills/github-pr-review-loop .claude/skills/
 ```
 

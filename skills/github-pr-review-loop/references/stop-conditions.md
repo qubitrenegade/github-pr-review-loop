@@ -120,15 +120,32 @@ gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
 
 If that count is 0 AND the review's `submitted_at`
 (`$LAST_COPILOT_REVIEW_AT`) is newer than your most recent commit's
-author date, the latest pass was actually clean. The ID itself is a
-monotonically-increasing integer, so comparing IDs to a commit would
-be a type error; the timestamp is what's actually comparable.
+**committer** date, the latest pass was actually clean.
+
+```bash
+LATEST_COMMIT_DATE=$(git -C "$REPO_DIR" log -1 --format=%cI HEAD)
+# then:  "$LAST_COPILOT_REVIEW_AT" > "$LATEST_COMMIT_DATE"  (ISO-8601 string
+# compare works correctly)
+```
+
+Why committer date and not author date: author date is preserved
+across rebase / cherry-pick / am-patch, so it can be arbitrarily old
+for a commit that just landed on the branch. Copilot still reviews
+the head at its current committer time, so comparing to the author
+date can mark a fresh review as "stale" and chase a false failure.
+The committer date is updated on every git operation that writes
+the commit, which is what you actually care about.
+
+The review ID itself is a monotonically-increasing integer, so
+comparing IDs to a commit would be a type error; the timestamp is
+what's actually comparable.
 
 Caveats:
 
 - The count can be 0 because Copilot hasn't reviewed since your last
   push. Check the review's `submitted_at` is newer than your most
-  recent commit's timestamp before trusting the zero.
+  recent commit's **committer** date (`git log -1 --format=%cI HEAD`)
+  before trusting the zero.
 - `LAST_COPILOT_REVIEW_ID` is empty when no Copilot review has ever
   run on the PR. The guard above treats that as "not ready" rather
   than "clean" — don't interpret silence as consent.
@@ -145,10 +162,15 @@ engaged with has been resolved. A PR with 0 new findings AND 0
 unresolved threads is the cleanest merge state.
 
 Placeholder note: `<owner>` is the org/user, `<name>` is the bare
-repo name. Elsewhere in this doc `<owner>/<repo>` is the combined
-slug passed to REST endpoints; GraphQL's `repository(owner:, name:)`
-takes them as two separate fields, so this block uses `<name>`
-deliberately.
+repo name. Earlier blocks in this doc used `REPO="<owner>/<repo>"` —
+the combined slug for REST endpoints. GraphQL's
+`repository(owner:, name:)` takes them as two separate fields, so
+this block needs two shell vars:
+
+```bash
+OWNER="<owner>"          # e.g. qubitrenegade
+NAME="<name>"            # bare repo name, e.g. github-pr-review-loop
+```
 
 ```bash
 # reviewThreads(first: 100) returns at most 100 threads — fine for
