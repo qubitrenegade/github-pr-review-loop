@@ -70,6 +70,10 @@ this repo as a marketplace, then install the plugin from it.
 ```
 /plugin marketplace add qubitrenegade/github-pr-review-loop
 /plugin install github-pr-review-loop@qubitrenegade-github-pr-review-loop
+
+# or from the cli
+claude plugin marketplace add qubitrenegade/github-pr-review-loop
+claude plugin install github-pr-review-loop@qubitrenegade-github-pr-review-loop
 ```
 
 The first command registers the repo as a marketplace (the marketplace
