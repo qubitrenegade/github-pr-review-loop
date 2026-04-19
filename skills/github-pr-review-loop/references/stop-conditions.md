@@ -32,8 +32,17 @@ Use a whitelist (SUCCESS, SKIPPED, NEUTRAL are the green
 conclusions), not a blacklist (FAILURE alone misses CANCELLED,
 TIMED_OUT, etc. and falsely green-lights a broken gate).
 
+Set env vars first so the snippets are copy-paste-safe (angle-bracket
+placeholders like `<N>` are I/O redirection tokens in bash/zsh even
+inside assignments; quote them on the RHS):
+
 ```bash
-gh pr view <N> --repo <owner>/<repo> --json statusCheckRollup --jq \
+REPO="<owner>/<repo>"    # e.g. qubitrenegade/github-pr-review-loop
+PR_NUM="<N>"             # e.g. 42
+```
+
+```bash
+gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
   '{
     blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
     pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
@@ -73,8 +82,8 @@ is finalised last) — timestamp filters silently miss those and read
 as false "clean" passes.
 
 ```bash
-REPO=<owner>/<repo>
-PR_NUM=<N>
+REPO="<owner>/<repo>"
+PR_NUM="<N>"
 
 # Get the latest Copilot review's ID AND submitted_at in one fetch.
 # The REST reviews endpoint exposes Copilot's login as
@@ -156,7 +165,7 @@ gh api graphql -f query='
         }
       }
     }
-  }' -F owner=<owner> -F name=<name> -F number=<N> \
+  }' -F owner="$OWNER" -F name="$NAME" -F number="$PR_NUM" \
   --jq '{
     total: .data.repository.pullRequest.reviewThreads.totalCount,
     sampled: (.data.repository.pullRequest.reviewThreads.nodes | length),

@@ -98,8 +98,13 @@ That does nothing for bot reviewers. The only mechanism that actually
 re-triggers Copilot is the GraphQL `requestReviews` mutation:
 
 ```bash
+# Set these first — angle-bracket placeholders are shell I/O
+# redirection tokens and will fail on copy-paste without quoting.
+REPO="<owner>/<repo>"      # e.g. qubitrenegade/github-pr-review-loop
+PR_NUM="<pr-number>"       # e.g. 42
 BOT_ID="BOT_kgDOCnlnWA"  # Copilot's global node ID on github.com (see below)
-PR_ID=$(gh pr view <PR_NUM> --repo <owner>/<repo> --json id --jq .id)
+
+PR_ID=$(gh pr view "$PR_NUM" --repo "$REPO" --json id --jq .id)
 gh api graphql -f query='
   mutation($prId: ID!, $botId: ID!) {
     requestReviews(input: {pullRequestId: $prId, botIds: [$botId]}) {
@@ -148,7 +153,8 @@ TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, or still in-progress —
 blocks merge.
 
 ```bash
-gh pr view <PR_NUM> --repo <owner>/<repo> --json statusCheckRollup --jq \
+# $REPO and $PR_NUM from the earlier snippet
+gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
   '{
     blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
     pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],

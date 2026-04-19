@@ -1,7 +1,25 @@
 # GraphQL + gh CLI snippets
 
 Exact commands for interacting with Copilot reviews through the GitHub
-API. All shell-safe; all assume `gh` is authenticated.
+API.  All snippets assume `gh` is authenticated and that the shell
+variables below are set; populate them before running anything in
+this file so the commands are copy-paste-safe:
+
+```bash
+OWNER="<owner>"          # e.g. qubitrenegade
+NAME="<repo>"            # bare repo name, e.g. github-pr-review-loop
+REPO="$OWNER/$NAME"      # combined slug for REST endpoints
+PR_NUM="<pr-number>"     # e.g. 42
+```
+
+Why a preamble + why the quotes around the RHS: angle-bracket
+placeholders like `<owner>` are I/O redirection tokens in bash/zsh,
+even inside an assignment (`OWNER=<owner>` tries to read from a
+file named `owner` and fails with "No such file or directory").
+Quoting `<owner>` on the RHS makes the placeholder a string literal
+so the line is copy-paste-safe, then the user substitutes the real
+value.  Downstream commands reference `"$OWNER"` / `"$REPO"` /
+etc, which is both safe and idiomatic.
 
 ## Contents
 
@@ -82,7 +100,7 @@ gh api graphql -f query='
         }
       }
     }
-  }' -F owner=<owner> -F name=<name> -F number=<pr-with-recent-copilot-review> \
+  }' -F owner="$OWNER" -F name="$NAME" -F number="$PR_NUM" \
   --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | select(.author.login == "copilot-pull-request-reviewer") | .author | {id, login}'
 ```
 
@@ -111,8 +129,7 @@ Push your fix commits first, then:
 
 ```bash
 BOT_ID="BOT_kgDOCnlnWA"
-PR_NUM=<pr-number>
-REPO=<owner>/<repo>
+# PR_NUM and REPO come from the shell-setup preamble at the top of this file.
 
 PR_ID=$(gh pr view "$PR_NUM" --repo "$REPO" --json id --jq .id)
 
@@ -183,7 +200,7 @@ round" reading.
 ## Reply to a specific inline comment
 
 ```bash
-COMMENT_ID=<id-from-list-above>
+COMMENT_ID="<id-from-list-above>"
 gh api "repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies" \
   -f body="Fixed in abc1234 — concise description of the fix."
 ```
@@ -228,9 +245,7 @@ reviewThreads(first: 1) { totalCount }
 ```
 
 ```bash
-OWNER=<owner>
-NAME=<repo>
-PR_NUM=<pr-number>
+# OWNER, NAME, PR_NUM from the shell-setup preamble.
 
 gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
@@ -265,7 +280,7 @@ After you've posted your reply (apply SHA / dismiss evidence / defer
 + issue link), mark the thread resolved:
 
 ```bash
-THREAD_ID=<from reviewThreads query above>
+THREAD_ID="<from reviewThreads query above>"
 gh api graphql -f query='
   mutation($threadId: ID!) {
     resolveReviewThread(input: {threadId: $threadId}) {
@@ -297,7 +312,8 @@ Common case after a round of fixes: you've replied to 6 threads
 with apply SHAs, now you want to resolve them all in one shot.
 
 ```bash
-OWNER=<owner>; NAME=<repo>; PR_NUM=<N>; ME=<your-github-login>
+# OWNER, NAME, PR_NUM from the shell-setup preamble.  ME is new:
+ME="<your-github-login>"   # e.g. qubitrenegade
 
 # 1. Get all unresolved threads
 UNRESOLVED=$(gh api graphql -f query='

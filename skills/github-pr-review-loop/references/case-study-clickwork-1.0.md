@@ -56,7 +56,7 @@ Waves landed as:
 
 Wave 2 had 12 PRs. The parallelism policy was the single biggest
 throughput lever — without it, 12 serial review loops would have taken
-8+ hours; with overlapped bake time, Wave 2 finished in ~3.
+8+ hours; with overlapped bake time, Wave 2 finished in ~3 hours.
 
 ## Wave-by-wave breakdown
 

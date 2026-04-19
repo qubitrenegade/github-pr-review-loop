@@ -125,41 +125,52 @@ Target layout:
     └── <branch-for-PR-B>/
 ```
 
-The cleanest way to get there is to `cd <repo>` once and do
-everything with paths relative to the main checkout:
+The cleanest way to get there is to `cd "$REPO_DIR"` once and do
+everything with paths relative to the main checkout.  Set two
+shell vars first so nothing is ambiguous on copy-paste (angle-
+bracket placeholders are I/O redirection tokens in bash):
 
 ```bash
-cd <repo>
+# Quote the placeholders on the right-hand side — bash treats
+# '<foo>' as I/O redirection even in assignments, so REPO_DIR=<repo>
+# would fail with "No such file or directory" on copy-paste before
+# you got a chance to substitute your values.
+REPO_DIR="<repo>"         # the bare directory name, e.g. clickwork
+BRANCH="<branch-name>"    # e.g. feat/new-widget-42
+
+cd "$REPO_DIR"
 git fetch origin
-mkdir -p ../<repo>.worktrees
-git worktree add ../<repo>.worktrees/<branch-name> -b <branch-name> origin/main
-cd ../<repo>.worktrees/<branch-name>
+mkdir -p "../$REPO_DIR.worktrees"
+git worktree add "../$REPO_DIR.worktrees/$BRANCH" -b "$BRANCH" origin/main
+cd "../$REPO_DIR.worktrees/$BRANCH"
 # subagent works here
 ```
 
 Why this shape:
 
-- `cd <repo>` first so every subsequent path is relative to the main
-  checkout — one mental model, no `-C` flag toggles.
-- `mkdir -p ../<repo>.worktrees` creates the sibling directory on a
-  fresh checkout. `git worktree add` does NOT create intermediate
-  directories and would otherwise fail with a confusing "no such
-  file or directory" on the first worktree of the session.
-- `git worktree add ../<repo>.worktrees/<branch-name>` places the
-  worktree one level up from `<repo>/`, as a sibling — if you forget
-  the `../` and write `git worktree add <repo>.worktrees/<branch>`
-  it lands inside `<repo>/<repo>.worktrees/` (nested), defeating
-  isolation.
-- `cd ../<repo>.worktrees/<branch-name>` leaves you in the worktree
+- `cd "$REPO_DIR"` first so every subsequent path is relative to
+  the main checkout — one mental model, no `-C` flag toggles.
+- `mkdir -p "../$REPO_DIR.worktrees"` creates the sibling directory
+  on a fresh checkout. `git worktree add` does NOT create
+  intermediate directories and would otherwise fail with a
+  confusing "no such file or directory" on the first worktree of
+  the session.
+- `git worktree add "../$REPO_DIR.worktrees/$BRANCH"` places the
+  worktree one level up from `$REPO_DIR/`, as a sibling — if you
+  drop the `../` and write `git worktree add "$REPO_DIR.worktrees/$BRANCH"`
+  it lands inside `$REPO_DIR/$REPO_DIR.worktrees/` (nested),
+  defeating isolation.
+- `cd "../$REPO_DIR.worktrees/$BRANCH"` leaves you in the worktree
   ready for work.
 
 Clean up after merge (stay inside the main checkout, not the
 worktree, to avoid removing the directory you're in):
 
 ```bash
-cd <repo>   # if you're elsewhere
-git worktree remove ../<repo>.worktrees/<branch-name>
-git branch -d <branch-name>
+# $REPO_DIR and $BRANCH from the earlier assignment block
+cd "$REPO_DIR"   # if you're elsewhere
+git worktree remove "../$REPO_DIR.worktrees/$BRANCH"
+git branch -d "$BRANCH"
 ```
 
 Without worktree-per-PR, a subagent editing branch B while another
