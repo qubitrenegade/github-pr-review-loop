@@ -7,9 +7,9 @@ verify CI is green before merging, and stop chasing rounds when Copilot
 starts repeating itself. Scales from one PR to many with parallel worktrees.
 
 This skill encodes the habits from shipping [clickwork
-1.0.0](https://pypi.org/project/clickwork/) (24 issues, 19 PRs, 1 day of
-parallel waves), generalised so it applies to any repo with GitHub Copilot
-PR reviewer turned on.
+1.0.0](https://pypi.org/project/clickwork/) — 24 issues across ~25 PRs in
+~20 hours of parallel waves — generalised so it applies to any repo with
+GitHub Copilot PR reviewer turned on.
 
 ## When Claude should invoke this skill
 

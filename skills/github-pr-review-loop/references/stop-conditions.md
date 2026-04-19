@@ -14,6 +14,7 @@ arbitrary thresholds.
 - User escape hatch
 - Failure-mode stops
 - Anti-patterns (don't stop for these reasons)
+- Putting it together
 
 ## Merge precondition: required CI checks are green
 
@@ -75,16 +76,21 @@ as false "clean" passes.
 REPO=<owner>/<repo>
 PR_NUM=<N>
 
-# Get the latest Copilot review's integer ID from REST. The REST
-# reviews endpoint exposes Copilot's login as
+# Get the latest Copilot review's ID AND submitted_at in one fetch.
+# The REST reviews endpoint exposes Copilot's login as
 # "copilot-pull-request-reviewer[bot]" (with the [bot] suffix) —
 # which differs from the REST comments "Copilot" and the GraphQL
 # "copilot-pull-request-reviewer". See graphql-snippets.md gotcha
 # table.
-LAST_COPILOT_REVIEW_ID=$(gh api --paginate "repos/$REPO/pulls/$PR_NUM/reviews?per_page=100" --jq \
-  '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last | .id // empty')
+#
+# `read` with a tab separator keeps both fields in scope for the
+# cross-check further down without requiring a second API call.
+read -r LAST_COPILOT_REVIEW_ID LAST_COPILOT_REVIEW_AT < <(
+  gh api --paginate "repos/$REPO/pulls/$PR_NUM/reviews?per_page=100" --jq \
+    '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last | "\(.id)\t\(.submitted_at)" // empty'
+)
 
-# Guard: if Copilot has never reviewed this PR, the ID is empty.
+# Guard: if Copilot has never reviewed this PR, both fields are empty.
 # That is not a "clean pass" — it just means the reviewer hasn't
 # run yet. Fall back to an explicit "no reviews" signal so the rest
 # of the loop doesn't treat missing data as success.
@@ -99,10 +105,11 @@ gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
   "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.pull_request_review_id == $LAST_COPILOT_REVIEW_ID)] | length"
 ```
 
-If that count is 0 AND the `LAST_COPILOT_REVIEW_ID` is newer than
-your most recent commit (you can cross-check with the review's
-`submitted_at` from the same REST fetch), the latest pass was
-actually clean.
+If that count is 0 AND the review's `submitted_at`
+(`$LAST_COPILOT_REVIEW_AT`) is newer than your most recent commit's
+author date, the latest pass was actually clean. The ID itself is a
+monotonically-increasing integer, so comparing IDs to a commit would
+be a type error; the timestamp is what's actually comparable.
 
 Caveats:
 

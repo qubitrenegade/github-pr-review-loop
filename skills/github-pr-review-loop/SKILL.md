@@ -1,6 +1,6 @@
 ---
 name: github-pr-review-loop
-description: Drives a GitHub pull request through its Copilot review loop to merge using a disciplined triage (apply / dismiss / clarify / defer), empirical dismissal of hallucinations, GraphQL-based re-request, thread resolution, and concrete stop conditions. Use when a PR has an open Copilot review that needs to be driven to merge, when running a batch of related PRs in parallel, or when deciding whether a Copilot finding is legitimate or a hallucination.
+description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions. Use for a Copilot-reviewed PR that needs driving to merge, for parallel batches of related PRs, or when deciding whether a Copilot finding is real.
 ---
 
 # GitHub PR Review Loop

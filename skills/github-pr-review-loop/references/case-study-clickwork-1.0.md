@@ -1,9 +1,11 @@
 # Case study — clickwork 1.0.0
 
 Concrete run of this skill's pattern on a real repo: shipping
-[clickwork 1.0.0](https://pypi.org/project/clickwork/) (24 issues, 19
-PRs) in ~20 hours. Useful as ground truth when deciding whether this
-skill's generalisation applies to your situation.
+[clickwork 1.0.0](https://pypi.org/project/clickwork/) — 24 issues
+closed across ~25 PRs (roadmap + per-wave plans + 23 implementation
+PRs + release cut + polish follow-ups) in ~20 hours. Useful as ground
+truth when deciding whether this skill's generalisation applies to
+your situation.
 
 ## Contents
 
@@ -47,7 +49,7 @@ Waves landed as:
 | Wave | Theme | Issues | PRs |
 |---|---|---|---|
 | 1 | Package metadata + API policy | #35, #36, #46, #49 | #64, #65 |
-| 2 | Features + infra | #37-#43, #47-#48, #57-#59 | #66-#77 (12 PRs) |
+| 2 | Features + infra | #37-#43, #47-#48, #57, #59 | #66-#77 (12 PRs) |
 | 3 | Feature completion | #50-#52, #60 (part b — `add_global_option` override) | #78-#81 |
 | 4 | Docs | #53-#56, #58 (the #54 config-precedence doc landed here after #80 fail-fast merged) | #82-#86 |
 | 5 | Release cut + polish | version bump | #87 + follow-ups |

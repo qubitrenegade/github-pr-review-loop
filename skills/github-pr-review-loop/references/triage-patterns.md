@@ -12,6 +12,7 @@ checklist for dismissals and the discipline around resolving threads.
 - Resolve the thread after replying
 - Evidence checklist (what to run for each claim type)
 - Batching multiple findings into one push
+- Special cases
 
 ## Apply
 
@@ -65,7 +66,7 @@ opinion.
 > child, the sender thread still joins normally because (a) the
 > ready-event timeout fires at 5s max, (b) SIGINT is sent once and
 > then returns, (c) `thread.daemon = True` means it cannot leak past
-> process exit. No teardown risk bounded to 5s.
+> process exit. Teardown risk is bounded at 5s; no unbounded hang.
 
 ## Clarify
 

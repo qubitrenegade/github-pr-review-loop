@@ -5,14 +5,16 @@ session), the single-PR loop runs in parallel across N PRs.
 
 ## Contents
 
-- When to use waves vs sequential
-- The pattern at a glance
-- Wave planning — roadmap PR first
+- When waves make sense
+- The pattern
+- Roadmap PR first
+- Per-wave plan PR
 - Worktree-per-PR discipline
-- Parallelism policy (overlap the bake time)
+- Parallelism policy — overlap the bake time
 - Scheduled wake-ups — never busy-poll
 - Merge-ordering constraints
 - Cross-PR failure modes
+- The "prep during bake" playbook
 
 ## When waves make sense
 
@@ -109,22 +111,31 @@ resulting implementation PRs through theirs.
 ## Worktree-per-PR discipline
 
 Each PR gets its own worktree, branched from current main (or from
-the previous wave's merged state). This isolates concurrent edits:
+the previous wave's merged state). This isolates concurrent edits.
+
+Run these from the **parent directory** of the repo (one level above
+`<repo>/`), so the worktree resolves as a **sibling** of the main
+checkout, not nested inside it:
 
 ```bash
-cd <repo>
-git fetch origin
-git worktree add <repo>.worktrees/<branch-name> -b <branch-name> origin/main
+# cwd: parent dir containing <repo>/
+git -C <repo> fetch origin
+git -C <repo> worktree add ../<repo>.worktrees/<branch-name> -b <branch-name> origin/main
 cd <repo>.worktrees/<branch-name>
 # subagent works here
 ```
 
-Standard worktree root: `<repo>.worktrees/<branch-name>`. Clean up
-after merge:
+Standard worktree root: `<repo>.worktrees/<branch-name>` at the same
+level as `<repo>/`. If you run `cd <repo>` first, the path resolves
+to `<repo>/<repo>.worktrees/<branch>` — nested inside the main
+checkout — which defeats the isolation and makes cleanup fragile.
+
+Clean up after merge (again, from the parent dir):
 
 ```bash
-git worktree remove <repo>.worktrees/<branch-name>
-git branch -d <branch-name>
+# cwd: parent dir
+git -C <repo> worktree remove ../<repo>.worktrees/<branch-name>
+git -C <repo> branch -d <branch-name>
 ```
 
 Without worktree-per-PR, a subagent editing branch B while another is
@@ -215,8 +226,8 @@ When wave 1 is in review and you're waiting on Copilot:
 2. Pre-create worktrees for wave 2's issues.
 3. Dispatch the first 1-2 subagents for wave 2. They run concurrently
    with wave 1's review loops.
-4. Watch wave 1's scheduled wake-ups. When a PR hits a stop condition,
-   merge it.
+4. When wave 1's scheduled wake-ups fire, merge each PR that's hit a
+   stop condition.
 5. Once all of wave 1 is merged, the wave 2 subagents should be
    producing diffs. Review, commit, open PRs, start wave 2's loops.
 

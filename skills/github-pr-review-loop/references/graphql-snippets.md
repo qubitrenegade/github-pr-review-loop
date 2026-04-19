@@ -35,10 +35,12 @@ or a future github.com where the ID has rotated.
 Use it in the `botIds` field of `requestReviews`. Do NOT pass it as
 `userIds` — Copilot is a bot, not a user, and userIds will 404.
 
-### Gotcha: the bot has three different login strings across APIs
+### Gotcha: Copilot's identifier across APIs
 
 Copilot's identifier is not consistent across GitHub's API surfaces.
-Three distinct values appear in the wild:
+Three distinct **login strings** appear depending on which endpoint
+you hit (plus a separate `user.type` field that's always `Bot` for
+account-shape disambiguation):
 
 | API endpoint | Field | Value |
 |---|---|---|
@@ -48,7 +50,7 @@ Three distinct values appear in the wild:
 | GraphQL `reviews.nodes[].author.login` | | `copilot-pull-request-reviewer` |
 | GraphQL `reviewThreads.nodes[].comments.nodes[].author.login` | | `copilot-pull-request-reviewer` |
 
-Match by endpoint:
+Match by endpoint when filtering:
 - REST comments → `"Copilot"`
 - REST reviews → `"copilot-pull-request-reviewer[bot]"` (note the `[bot]` suffix)
 - GraphQL anywhere → `"copilot-pull-request-reviewer"` (no suffix)
