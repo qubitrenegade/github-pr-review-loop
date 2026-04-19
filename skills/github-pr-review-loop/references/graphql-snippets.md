@@ -33,7 +33,9 @@ helper below for anyone on GitHub Enterprise, a different instance,
 or a future github.com where the ID has rotated.
 
 Use it in the `botIds` field of `requestReviews`. Do NOT pass it as
-`userIds` — Copilot is a bot, not a user, and userIds will 404.
+`userIds` — Copilot is a bot, not a user, and the mutation typically
+returns a GraphQL error (often still HTTP 200) like `Could not
+resolve to User node` rather than a 404.
 
 ### Gotcha: Copilot's identifier across APIs
 

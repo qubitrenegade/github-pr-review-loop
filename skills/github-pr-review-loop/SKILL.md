@@ -306,9 +306,11 @@ skill's generalisation actually applies to your situation.
 enabled for Copilot PR review. Turn it on in repo settings → Pull
 Requests → "Copilot review".
 
-**`BOT_kgDOCnlnWA` gives a "User not found" error.** You used `userIds`
-instead of `botIds` in the mutation. Copilot is a bot, not a user;
-userIds will always 404 for it.
+**`BOT_kgDOCnlnWA` gives a "Could not resolve to User node" error.**
+You used `userIds` instead of `botIds` in the mutation. Copilot is a
+bot, not a user. With `gh api graphql`, that shows up as a GraphQL
+error payload (typically HTTP 200 with an `errors` array) naming the
+node type mismatch — not an HTTP 404.
 
 **CI failures repeat across pushes but aren't from my code.** If the
 same workflow fails on `main` too, it's infra (bad cache, flaky

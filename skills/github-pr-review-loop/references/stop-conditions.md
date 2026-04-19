@@ -86,8 +86,12 @@ PR_NUM=<N>
 # `read` with a tab separator keeps both fields in scope for the
 # cross-check further down without requiring a second API call.
 read -r LAST_COPILOT_REVIEW_ID LAST_COPILOT_REVIEW_AT < <(
+  # `last? | select(.)` short-circuits on an empty filtered array so the
+  # jq pipeline emits nothing (not the literal string "null") when Copilot
+  # hasn't reviewed yet. Without the guard, `"\(.id)\t\(.submitted_at)"`
+  # would interpolate null into a string, bypassing the -z check below.
   gh api --paginate "repos/$REPO/pulls/$PR_NUM/reviews?per_page=100" --jq \
-    '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last | "\(.id)\t\(.submitted_at)" // empty'
+    '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last? | select(.) | "\(.id)\t\(.submitted_at)"'
 )
 
 # Guard: if Copilot has never reviewed this PR, both fields are empty.
