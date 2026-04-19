@@ -1,0 +1,8 @@
+{
+  "name": "github-pr-review-loop",
+  "version": "0.1.0",
+  "description": "Claude Code skill for running a disciplined GitHub PR review loop with Copilot: triage, empirical dismissal, and when to stop. Scales to multi-PR waves.",
+  "author": { "name": "qubitrenegade" },
+  "homepage": "https://github.com/qubitrenegade/github-pr-review-loop",
+  "license": "MIT"
+}

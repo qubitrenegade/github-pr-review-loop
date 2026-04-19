@@ -1,0 +1,14 @@
+{
+  "name": "qubitrenegade-github-pr-review-loop",
+  "owner": {
+    "name": "qubitrenegade"
+  },
+  "plugins": [
+    {
+      "name": "github-pr-review-loop",
+      "source": "./",
+      "description": "Claude Code skill for running a disciplined GitHub PR review loop with Copilot: triage, empirical dismissal, and when to stop. Scales to multi-PR waves.",
+      "version": "0.1.0"
+    }
+  ]
+}
