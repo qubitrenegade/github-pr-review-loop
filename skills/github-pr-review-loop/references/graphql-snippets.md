@@ -358,9 +358,9 @@ CANCELLED, TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE) blocks merge.
 ```bash
 gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
   '{
-     blocking: [.statusCheckRollup[] | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
-     pending: [.statusCheckRollup[] | select(.status != "COMPLETED") | .name],
-     green: ([.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))] | length)
+     blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
+     pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
+     green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))] | length)
    }'
 ```
 
