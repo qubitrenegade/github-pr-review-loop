@@ -68,6 +68,7 @@ Claude Code's plugin system uses a two-step marketplace flow: add
 this repo as a marketplace, then install the plugin from it.
 
 ```
+# From within claude
 /plugin marketplace add qubitrenegade/github-pr-review-loop
 /plugin install github-pr-review-loop@qubitrenegade-github-pr-review-loop
 
