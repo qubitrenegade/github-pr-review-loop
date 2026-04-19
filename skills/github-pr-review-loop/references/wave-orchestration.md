@@ -120,10 +120,16 @@ checkout, not nested inside it:
 ```bash
 # cwd: parent dir containing <repo>/
 git -C <repo> fetch origin
+mkdir -p <repo>.worktrees
 git -C <repo> worktree add ../<repo>.worktrees/<branch-name> -b <branch-name> origin/main
 cd <repo>.worktrees/<branch-name>
 # subagent works here
 ```
+
+`mkdir -p` makes the first call on a fresh checkout work —
+`git worktree add` doesn't create the intermediate directory and
+would otherwise fail with a confusing "no such file or directory"
+error on the first worktree of the session.
 
 Standard worktree root: `<repo>.worktrees/<branch-name>` at the same
 level as `<repo>/`. If you run `cd <repo>` first, the path resolves

@@ -429,9 +429,12 @@ Possible causes, in order of likelihood:
 
 ### Comment replies are 404-ing on valid-looking IDs
 
-Use the `/comments/<id>/replies` endpoint (review-comment replies), not
-`/issues/comments/<id>` (issue comments). Inline PR comments are
-separate from issue-style comments; different API surfaces.
+Use the PR review-comment reply endpoint
+`POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies`
+— note the `{pull_number}` in the path — not the issue-comments endpoint
+`/repos/{owner}/{repo}/issues/comments/{comment_id}` (which is for
+top-level issue-style comments). Inline PR review comments and
+issue-style comments live on different API surfaces.
 
 ### Batch reply shell loop prints huge GitHub response JSON
 
