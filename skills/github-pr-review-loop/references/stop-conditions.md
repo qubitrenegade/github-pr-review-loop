@@ -58,18 +58,35 @@ Check empirically:
 ```bash
 # When did the latest Copilot review submit?
 LAST=$(gh pr view <N> --repo <owner>/<repo> --json reviews --jq \
-  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt')
+  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt // empty')
 
-# Count top-level inline comments created at or after that timestamp
-gh api "repos/<owner>/<repo>/pulls/<N>/comments?per_page=100" --jq \
+# Guard: if Copilot has never reviewed this PR, LAST is empty. That
+# is not a "clean pass" — it just means the reviewer hasn't run yet.
+# Fall back to an explicit "no reviews" signal so the rest of the
+# loop doesn't treat missing data as success.
+if [ -z "$LAST" ]; then
+  echo "No Copilot review yet — request one (or wait)." >&2
+  exit 1
+fi
+
+# Count top-level inline comments created at or after that timestamp.
+# --paginate pulls every page so large PRs don't silently truncate at
+# 100 comments.
+gh api --paginate "repos/<owner>/<repo>/pulls/<N>/comments?per_page=100" --jq \
   "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at >= \"$LAST\")] | length"
 ```
 
-If that count is 0, the latest pass was clean. Merge when you're ready.
+If that count is 0 AND `LAST` is newer than your most recent commit's
+timestamp, the latest pass was actually clean.
 
-Caveat: the count can be 0 because Copilot hasn't actually reviewed
-since your last push. Confirm `LAST` is newer than your most recent
-commit's timestamp before trusting the zero.
+Caveats:
+
+- The count can be 0 because Copilot hasn't reviewed since your last
+  push. Confirm `LAST` is newer than your most recent commit's
+  timestamp before trusting the zero.
+- `LAST` is empty when no Copilot review has ever run on the PR. The
+  guard above treats that as "not ready" rather than "clean" — don't
+  interpret silence as consent.
 
 ## Complement: zero unresolved conversation threads
 

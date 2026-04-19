@@ -5,7 +5,7 @@ API. All shell-safe; all assume `gh` is authenticated.
 
 ## Contents
 
-- Copilot's bot ID (stable across repos)
+- Copilot's bot ID (observed github.com value + runtime discovery)
 - Re-request Copilot review after a push
 - List a PR's inline comments (all, or latest round only)
 - Reply to a specific inline comment
@@ -109,10 +109,14 @@ Copilot will typically start a new review within 30-90 seconds.
 
 ## List inline comments on a PR
 
+Use `--paginate` so large PRs don't silently truncate at 100
+comments. A single page is 100 items; `--paginate` walks every page
+and concatenates the JSON arrays.
+
 **All inline comments (including replies):**
 
 ```bash
-gh api "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
+gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
   '.[] | {id, user: .user.login, in_reply_to_id, line, path, body: (.body[0:120])}'
 ```
 
@@ -121,15 +125,24 @@ gh api "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
 ```bash
 # Find when the latest Copilot review was submitted
 LAST_COPILOT=$(gh pr view "$PR_NUM" --repo "$REPO" --json reviews --jq \
-  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt')
+  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt // empty')
+
+if [ -z "$LAST_COPILOT" ]; then
+  echo "No Copilot review yet on this PR." >&2
+  exit 1
+fi
 
 # Pull only top-level comments (not replies) newer than that timestamp
-gh api "repos/$REPO/pulls/$PR_NUM/comments?sort=created&direction=desc&per_page=100" --jq \
+gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?sort=created&direction=desc&per_page=100" --jq \
   "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at > \"$LAST_COPILOT\")] | .[] | {id, line, path, body: (.body[0:200])}"
 ```
 
 `in_reply_to_id == null` filters out Copilot's replies to your replies
 (which do happen occasionally).
+
+Without `--paginate`, a PR with >100 comments will silently drop
+everything after the first page and you can get a false "clean
+round" reading.
 
 ## Reply to a specific inline comment
 
@@ -163,6 +176,20 @@ endpoints (`repos/$REPO/...`), and `OWNER=<owner>` + `NAME=<repo>`
 as two separate fields for GraphQL `repository(owner:, name:)`
 queries. Don't reuse `REPO` as the bare-name GraphQL variable —
 copy/paste across sections will break.
+
+**Pagination note.** `reviewThreads(first: 100)` returns the first
+100 threads. Most PRs have fewer; the clickwork 1.0 PRs maxed out
+around 15 threads each. For a PR with more than 100 threads, this
+query silently undercounts — both the listing and any
+"unresolved === 0" check downstream become wrong. If your PR has
+over ~80 threads, loop with the GraphQL `pageInfo.endCursor` +
+`after:` cursor; for everyday PRs the simple form below is fine.
+Add a `totalCount` read on `reviewThreads` if you want an early
+check:
+
+```graphql
+reviewThreads(first: 1) { totalCount }
+```
 
 ```bash
 OWNER=<owner>

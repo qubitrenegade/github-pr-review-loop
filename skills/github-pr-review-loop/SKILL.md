@@ -99,7 +99,7 @@ re-triggers Copilot is the GraphQL `requestReviews` mutation:
 
 ```bash
 BOT_ID="BOT_kgDOCnlnWA"  # Copilot's global node ID on github.com (see below)
-PR_ID=$(gh pr view <PR_NUM> --repo <OWNER/REPO> --json id --jq .id)
+PR_ID=$(gh pr view <PR_NUM> --repo <owner>/<repo> --json id --jq .id)
 gh api graphql -f query='
   mutation($prId: ID!, $botId: ID!) {
     requestReviews(input: {pullRequestId: $prId, botIds: [$botId]}) {
@@ -143,7 +143,7 @@ to stop chasing Copilot.** The merge gate is separate: every required
 CI check on the PR head must be in `SUCCESS` or `SKIPPED` state.
 
 ```bash
-gh pr view <PR_NUM> --repo <OWNER/REPO> --json statusCheckRollup --jq \
+gh pr view <PR_NUM> --repo <owner>/<repo> --json statusCheckRollup --jq \
   '{failed: [.statusCheckRollup[]? | select(.conclusion=="FAILURE") | .name],
     pending: [.statusCheckRollup[]? | select(.status!="COMPLETED") | .name]}'
 ```
