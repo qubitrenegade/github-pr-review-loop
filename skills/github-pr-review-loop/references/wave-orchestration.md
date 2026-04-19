@@ -111,41 +111,59 @@ resulting implementation PRs through theirs.
 ## Worktree-per-PR discipline
 
 Each PR gets its own worktree, branched from current main (or from
-the previous wave's merged state). This isolates concurrent edits.
+the previous wave's merged state). The worktree lives as a
+**sibling** of the main checkout (not nested inside it), so cleanup
+and isolation both behave predictably.
 
-Run these from the **parent directory** of the repo (one level above
-`<repo>/`), so the worktree resolves as a **sibling** of the main
-checkout, not nested inside it:
+Target layout:
+
+```
+<parent>/
+├── <repo>/                          (main checkout)
+└── <repo>.worktrees/
+    ├── <branch-for-PR-A>/
+    └── <branch-for-PR-B>/
+```
+
+The cleanest way to get there is to `cd <repo>` once and do
+everything with paths relative to the main checkout:
 
 ```bash
-# cwd: parent dir containing <repo>/
-git -C <repo> fetch origin
-mkdir -p <repo>.worktrees
-git -C <repo> worktree add ../<repo>.worktrees/<branch-name> -b <branch-name> origin/main
-cd <repo>.worktrees/<branch-name>
+cd <repo>
+git fetch origin
+mkdir -p ../<repo>.worktrees
+git worktree add ../<repo>.worktrees/<branch-name> -b <branch-name> origin/main
+cd ../<repo>.worktrees/<branch-name>
 # subagent works here
 ```
 
-`mkdir -p` makes the first call on a fresh checkout work —
-`git worktree add` doesn't create the intermediate directory and
-would otherwise fail with a confusing "no such file or directory"
-error on the first worktree of the session.
+Why this shape:
 
-Standard worktree root: `<repo>.worktrees/<branch-name>` at the same
-level as `<repo>/`. If you run `cd <repo>` first, the path resolves
-to `<repo>/<repo>.worktrees/<branch>` — nested inside the main
-checkout — which defeats the isolation and makes cleanup fragile.
+- `cd <repo>` first so every subsequent path is relative to the main
+  checkout — one mental model, no `-C` flag toggles.
+- `mkdir -p ../<repo>.worktrees` creates the sibling directory on a
+  fresh checkout. `git worktree add` does NOT create intermediate
+  directories and would otherwise fail with a confusing "no such
+  file or directory" on the first worktree of the session.
+- `git worktree add ../<repo>.worktrees/<branch-name>` places the
+  worktree one level up from `<repo>/`, as a sibling — if you forget
+  the `../` and write `git worktree add <repo>.worktrees/<branch>`
+  it lands inside `<repo>/<repo>.worktrees/` (nested), defeating
+  isolation.
+- `cd ../<repo>.worktrees/<branch-name>` leaves you in the worktree
+  ready for work.
 
-Clean up after merge (again, from the parent dir):
+Clean up after merge (stay inside the main checkout, not the
+worktree, to avoid removing the directory you're in):
 
 ```bash
-# cwd: parent dir
-git -C <repo> worktree remove ../<repo>.worktrees/<branch-name>
-git -C <repo> branch -d <branch-name>
+cd <repo>   # if you're elsewhere
+git worktree remove ../<repo>.worktrees/<branch-name>
+git branch -d <branch-name>
 ```
 
-Without worktree-per-PR, a subagent editing branch B while another is
-editing branch A in the same checkout causes file-state confusion.
+Without worktree-per-PR, a subagent editing branch B while another
+is editing branch A in the same checkout causes file-state confusion.
 
 ## Parallelism policy — overlap the bake time
 
