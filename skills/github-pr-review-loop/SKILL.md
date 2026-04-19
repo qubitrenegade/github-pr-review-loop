@@ -280,10 +280,10 @@ for the parallel-waves pattern in detail.
 
 The [clickwork 1.0.0
 case study](references/case-study-clickwork-1.0.md) walks through a real
-24-issue rollout across 4 waves and 19 PRs. Every principle above shows
-up in the narrative with commit SHAs and real Copilot transcripts —
-useful as ground truth when deciding whether this skill's generalisation
-actually applies to your situation.
+24-issue rollout across 4 planning waves + a release cut, ~25 PRs total.
+Every principle above shows up in the narrative with commit SHAs and real
+Copilot transcripts — useful as ground truth when deciding whether this
+skill's generalisation actually applies to your situation.
 
 ## Troubleshooting
 

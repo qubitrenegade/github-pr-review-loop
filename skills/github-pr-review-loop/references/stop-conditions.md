@@ -239,8 +239,10 @@ me, and have I acted on it?"
 - Zero new comments on the latest pass → yes and yes → merge.
 - New comments are repeats of addressed threads → yes and yes (action
   was the earlier fix) → merge.
-- Volume trending to zero with remaining comments being stylistic →
-  usually yes and yes → merge after processing the nits.
+- Volume trending to zero, and each remaining comment has been
+  triaged under the usual apply/dismiss/clarify/defer → yes and
+  yes → merge. Triage the nits the same way as any other finding;
+  don't skip them because they're small.
 - User says merge → yes → merge.
 
 If none of those fire and the reviewer is still producing signal, run

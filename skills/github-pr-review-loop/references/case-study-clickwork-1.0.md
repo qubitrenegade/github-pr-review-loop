@@ -21,9 +21,12 @@ skill's generalisation applies to your situation.
 - **Target:** ship 1.0.0 to PyPI same day, update downstream
   consumer (orbit-admin) to 1.0
 - **Final state:** 1.0.0 live on PyPI, signed `v1.0.0` tag, orbit-admin
-  merged to `clickwork>=1.0,<2`, 4 follow-up issues tracked (#61
-  Sigstore, #62 conda-forge, #94 GH Pages, one more)
-- **Total PRs:** 19 in clickwork, 1 in orbit-admin
+  merged to `clickwork>=1.0,<2`, three follow-ups left open on purpose
+  for future cycles (#61 Sigstore attestations + workflow-driven tag
+  signing for 1.0.x, #62 conda-forge recipe for post-1.0, #94 mkdocs
+  docs site)
+- **Total PRs:** ~25 in clickwork (roadmap + wave plans + issue PRs +
+  release cut + post-release polish), 1 in orbit-admin
 - **Copilot rounds total:** ~70 across all PRs
 - **Time:** ~20 hours wall clock, overlapped across waves
 
