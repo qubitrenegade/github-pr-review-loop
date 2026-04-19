@@ -153,9 +153,14 @@ aren't worth it outside of toy examples.
 Don't sit in a loop polling PR status every 30 seconds. Schedule a
 wake-up, do other work, come back when signaled.
 
-In Claude Code: `ScheduleWakeup` tool with a `<<autonomous-loop>>`
-payload at 4-5 minute intervals for single-PR loops, 2-3 minutes
-for multi-PR orchestration.
+In Claude Code: `ScheduleWakeup` tool with a
+`<<autonomous-loop-dynamic>>` payload at 4-5 minute intervals for
+single-PR loops, 2-3 minutes for multi-PR orchestration.
+(`<<autonomous-loop-dynamic>>` is the dynamic-pacing sentinel
+specific to `ScheduleWakeup`; `<<autonomous-loop>>` without the
+`-dynamic` suffix is a different sentinel for CronCreate-mode
+autonomous loops and is NOT interchangeable — using the wrong one
+fails silently and the loop won't resume.)
 
 Stagger wake-ups across PRs so they don't all fire simultaneously:
 
@@ -197,10 +202,10 @@ accumulate rebase debt. `git merge origin/main --no-edit` on the
 worktree branch is usually cleaner than `git rebase` for multi-commit
 branches under active review.
 
-**Copilot context bleeds across PRs.** It doesn't (each PR is a fresh
-context), but the maintainer's context does. Keep PR titles and
-descriptions self-contained so a reviewer flipping between 5 tabs
-doesn't have to reconstruct which PR does what.
+**Copilot context does NOT bleed across PRs** (each PR gets a fresh
+reviewer context), **but the maintainer's context does.** Keep PR
+titles and descriptions self-contained so a human reviewer flipping
+between 5 tabs doesn't have to reconstruct which PR does what.
 
 ## The "prep during bake" playbook
 

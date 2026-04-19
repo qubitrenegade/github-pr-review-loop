@@ -35,19 +35,24 @@ or a future github.com where the ID has rotated.
 Use it in the `botIds` field of `requestReviews`. Do NOT pass it as
 `userIds` — Copilot is a bot, not a user, and userIds will 404.
 
-### Gotcha: the bot has two different login strings across APIs
+### Gotcha: the bot has three different login strings across APIs
 
-Copilot's identifier is not consistent across GitHub's API surfaces:
+Copilot's identifier is not consistent across GitHub's API surfaces.
+Three distinct values appear in the wild:
 
 | API endpoint | Field | Value |
 |---|---|---|
 | REST `/pulls/<N>/comments` | `user.login` | `Copilot` |
 | REST `/pulls/<N>/comments` | `user.type` | `Bot` |
+| REST `/pulls/<N>/reviews` | `user.login` | `copilot-pull-request-reviewer[bot]` |
 | GraphQL `reviews.nodes[].author.login` | | `copilot-pull-request-reviewer` |
 | GraphQL `reviewThreads.nodes[].comments.nodes[].author.login` | | `copilot-pull-request-reviewer` |
 
-Filtering comments via REST: match `"Copilot"`.
-Filtering review threads via GraphQL: match `"copilot-pull-request-reviewer"`.
+Match by endpoint:
+- REST comments → `"Copilot"`
+- REST reviews → `"copilot-pull-request-reviewer[bot]"` (note the `[bot]` suffix)
+- GraphQL anywhere → `"copilot-pull-request-reviewer"` (no suffix)
+
 Getting this wrong silently returns an empty result — no error, just
 zero matches. Double-check with one unfiltered query first if your
 filter returns unexpectedly empty.
@@ -74,7 +79,7 @@ gh api graphql -f query='
       }
     }
   }' -F owner=<owner> -F name=<name> -F number=<pr-with-recent-copilot-review> \
-  --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | select(.author.login == "copilot-pull-request-reviewer") | {id, login}'
+  --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | select(.author.login == "copilot-pull-request-reviewer") | .author | {id, login}'
 ```
 
 `last: 50` pulls the 50 most recent reviews rather than the oldest
@@ -138,22 +143,30 @@ gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
 
 **Only Copilot's top-level comments from the latest round:**
 
-```bash
-# Find when the latest Copilot review was submitted
-LAST_COPILOT=$(gh pr view "$PR_NUM" --repo "$REPO" --json reviews --jq \
-  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt // empty')
+Filter by `pull_request_review_id`, not by timestamp. Review comments
+on GitHub are created a second or two BEFORE the parent review's
+`submitted_at` (the comments exist during review composition; the
+review is finalised last). Timestamp comparisons like
+`created_at >= submitted_at` miss those earlier-by-a-second comments
+and return false "zero new findings" readings.
 
-if [ -z "$LAST_COPILOT" ]; then
+```bash
+# Get the latest Copilot review's integer ID from REST. Note the
+# REST-reviews endpoint uses "copilot-pull-request-reviewer[bot]"
+# (with a [bot] suffix) — different from the REST-comments "Copilot"
+# and the GraphQL "copilot-pull-request-reviewer".
+LAST_COPILOT_REVIEW_ID=$(gh api --paginate "repos/$REPO/pulls/$PR_NUM/reviews?per_page=100" --jq \
+  '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last | .id // empty')
+
+if [ -z "$LAST_COPILOT_REVIEW_ID" ]; then
   echo "No Copilot review yet on this PR." >&2
   exit 1
 fi
 
-# Pull only top-level comments (not replies) from the latest
-# review. Use `>=` not `>` so comments created in the same second
-# as the review's submittedAt (common since GitHub timestamps are
-# second-granular) don't get filtered out.
-gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?sort=created&direction=desc&per_page=100" --jq \
-  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at >= \"$LAST_COPILOT\")] | .[] | {id, line, path, body: (.body[0:200])}"
+# Pull only top-level comments (not replies) that belong to that
+# specific review — the review-id match is exact, no timestamp race.
+gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
+  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.pull_request_review_id == $LAST_COPILOT_REVIEW_ID)] | .[] | {id, line, path, body: (.body[0:200])}"
 ```
 
 `in_reply_to_id == null` filters out Copilot's replies to your replies
@@ -295,8 +308,12 @@ UNRESOLVED=$(gh api graphql -f query='
   }' -F owner="$OWNER" -F name="$NAME" -F number="$PR_NUM" \
   --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select([.comments.nodes[].author.login] | any(. == "'"$ME"'")) | .id')
 
-# 2. Resolve each
-for tid in $UNRESOLVED; do
+# 2. Resolve each. Use `while read` instead of unquoted `for` so
+# whitespace or newline-containing IDs can't trip the shell's word
+# splitting. Thread IDs don't contain whitespace today, but this is
+# defensive-by-default.
+while IFS= read -r tid; do
+  [ -z "$tid" ] && continue
   gh api graphql -f query='
     mutation($threadId: ID!) {
       resolveReviewThread(input: {threadId: $threadId}) {
@@ -304,7 +321,7 @@ for tid in $UNRESOLVED; do
       }
     }' -f threadId="$tid" >/dev/null
   echo "Resolved $tid"
-done
+done <<< "$UNRESOLVED"
 ```
 
 The filter `any(author == $ME)` limits resolution to threads YOU
@@ -333,21 +350,36 @@ against).
 
 ## Check CI status on the current PR head
 
+Whitelist-based: only `SUCCESS` and `SKIPPED` count as green; any
+other completed conclusion (FAILURE, CANCELLED, TIMED_OUT,
+ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL) blocks merge.
+
 ```bash
 gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
   '{
-     failed: [.statusCheckRollup[] | select(.conclusion=="FAILURE") | .name],
-     pending: [.statusCheckRollup[] | select(.status!="COMPLETED") | .name],
-     passing: ([.statusCheckRollup[] | select(.conclusion=="SUCCESS")] | length)
+     blocking: [.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+     pending: [.statusCheckRollup[] | select(.status != "COMPLETED") | .name],
+     green: ([.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
    }'
 ```
 
 Interpret:
 
-- Empty `failed`, empty `pending` → ready to consider merging.
-- Non-empty `failed` → investigate. If the same check also fails on
-  `main`, it's infra (see `stop-conditions.md` "infra-red" case).
+- Empty `blocking`, empty `pending` → every completed check is green
+  (SUCCESS or SKIPPED), nothing in-flight → ready to consider merging.
+- Non-empty `blocking` → investigate by conclusion. FAILURE means
+  fix the code or the workflow (infra if the same check also fails
+  on `main` — see `stop-conditions.md` "failure-mode stops"
+  section). CANCELLED / TIMED_OUT usually means re-run.
+  ACTION_REQUIRED usually means a first-time-contributor approval
+  or secret-access prompt.
 - Non-empty `pending` → wait; use a scheduled wake-up, not busy-poll.
+
+Why not a FAILURE-only filter: GitHub's check conclusions include
+CANCELLED, TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, and NEUTRAL.
+A blacklist on FAILURE lets those slip through and falsely flags the
+PR as green when a required check was killed mid-run or is waiting
+on manual intervention.
 
 ## Get the PR's GraphQL node ID (used by mutations)
 

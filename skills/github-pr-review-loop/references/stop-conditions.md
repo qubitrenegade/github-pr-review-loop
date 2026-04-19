@@ -19,27 +19,37 @@ arbitrary thresholds.
 
 Before any stop condition becomes a merge decision, **every required
 CI check on the PR head must be in `SUCCESS` (or `SKIPPED`) state.**
-A clean Copilot pass on red CI is not a merge — it's permission to
+Any other conclusion blocks merge — FAILURE, CANCELLED, TIMED_OUT,
+ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL, or still in-progress. A
+clean Copilot pass on red CI is not a merge — it's permission to
 stop chasing review comments while the CI problem still needs
 solving.
 
+Use a whitelist (SUCCESS/SKIPPED are the only green conclusions),
+not a blacklist (FAILURE alone misses CANCELLED, TIMED_OUT, etc. and
+falsely green-lights a broken gate).
+
 ```bash
 gh pr view <N> --repo <owner>/<repo> --json statusCheckRollup --jq \
-  '{failed: [.statusCheckRollup[]? | select(.conclusion=="FAILURE") | .name],
-    pending: [.statusCheckRollup[]? | select(.status!="COMPLETED") | .name],
-    passing: ([.statusCheckRollup[]? | select(.conclusion=="SUCCESS")] | length)}'
+  '{
+    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+    pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
+    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
+  }'
 ```
 
 **Interpret:**
 
-- `failed == [] && pending == []` → CI is green, merge gate is
-  clear.
-- `failed != []` → investigate. Two cases:
-  - Failure is specific to this PR's diff → fix it (code, test, or
-    workflow in the same PR).
-  - Failure reproduces on `main` unchanged → pre-existing infra
-    breakage. Fix the infra in a dedicated PR, merge that, then CI
-    on this PR should go green. DO NOT admin-merge past it.
+- `blocking == [] && pending == []` → every completed check is
+  SUCCESS or SKIPPED, nothing in-flight → CI gate is clear.
+- `blocking != []` → investigate by conclusion. Every non-SUCCESS /
+  non-SKIPPED completed conclusion blocks merge. FAILURE means the
+  code or workflow is broken — if the failure reproduces on `main`
+  unchanged it's pre-existing infra (fix it in a dedicated PR, DO
+  NOT admin-merge past). CANCELLED / TIMED_OUT / STARTUP_FAILURE
+  usually means re-run. ACTION_REQUIRED usually means a
+  first-time-contributor approval or a secret-access prompt. NEUTRAL
+  is rare — treat as block-and-investigate.
 - `pending != []` → wait. Don't merge mid-CI. Schedule another
   wake-up.
 
@@ -53,40 +63,58 @@ on main → fix the infra first, don't bypass".
 latest head and produced no new inline comments. Any existing threads
 are replies-to-previously-addressed findings, not fresh signal.
 
-Check empirically:
+Check empirically by filtering comments on their
+`pull_request_review_id`, not on a timestamp comparison. Review-
+comment `created_at` can precede the parent review's `submitted_at`
+by a second or two (comments exist during composition; the review
+is finalised last) — timestamp filters silently miss those and read
+as false "clean" passes.
 
 ```bash
-# When did the latest Copilot review submit?
-LAST=$(gh pr view <N> --repo <owner>/<repo> --json reviews --jq \
-  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt // empty')
+REPO=<owner>/<repo>
+PR_NUM=<N>
 
-# Guard: if Copilot has never reviewed this PR, LAST is empty. That
-# is not a "clean pass" — it just means the reviewer hasn't run yet.
-# Fall back to an explicit "no reviews" signal so the rest of the
-# loop doesn't treat missing data as success.
-if [ -z "$LAST" ]; then
+# Get the latest Copilot review's integer ID from REST. The REST
+# reviews endpoint exposes Copilot's login as
+# "copilot-pull-request-reviewer[bot]" (with the [bot] suffix) —
+# which differs from the REST comments "Copilot" and the GraphQL
+# "copilot-pull-request-reviewer". See graphql-snippets.md gotcha
+# table.
+LAST_COPILOT_REVIEW_ID=$(gh api --paginate "repos/$REPO/pulls/$PR_NUM/reviews?per_page=100" --jq \
+  '[.[] | select(.user.login=="copilot-pull-request-reviewer[bot]")] | last | .id // empty')
+
+# Guard: if Copilot has never reviewed this PR, the ID is empty.
+# That is not a "clean pass" — it just means the reviewer hasn't
+# run yet. Fall back to an explicit "no reviews" signal so the rest
+# of the loop doesn't treat missing data as success.
+if [ -z "$LAST_COPILOT_REVIEW_ID" ]; then
   echo "No Copilot review yet — request one (or wait)." >&2
   exit 1
 fi
 
-# Count top-level inline comments created at or after that timestamp.
-# --paginate pulls every page so large PRs don't silently truncate at
-# 100 comments.
-gh api --paginate "repos/<owner>/<repo>/pulls/<N>/comments?per_page=100" --jq \
-  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at >= \"$LAST\")] | length"
+# Count top-level inline comments belonging to that specific review.
+# --paginate pulls every page so large PRs don't silently truncate.
+gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?per_page=100" --jq \
+  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.pull_request_review_id == $LAST_COPILOT_REVIEW_ID)] | length"
 ```
 
-If that count is 0 AND `LAST` is newer than your most recent commit's
-timestamp, the latest pass was actually clean.
+If that count is 0 AND the `LAST_COPILOT_REVIEW_ID` is newer than
+your most recent commit (you can cross-check with the review's
+`submitted_at` from the same REST fetch), the latest pass was
+actually clean.
 
 Caveats:
 
 - The count can be 0 because Copilot hasn't reviewed since your last
-  push. Confirm `LAST` is newer than your most recent commit's
-  timestamp before trusting the zero.
-- `LAST` is empty when no Copilot review has ever run on the PR. The
-  guard above treats that as "not ready" rather than "clean" — don't
-  interpret silence as consent.
+  push. Check the review's `submitted_at` is newer than your most
+  recent commit's timestamp before trusting the zero.
+- `LAST_COPILOT_REVIEW_ID` is empty when no Copilot review has ever
+  run on the PR. The guard above treats that as "not ready" rather
+  than "clean" — don't interpret silence as consent.
+- Do NOT filter by `created_at >= submitted_at`. Empirically
+  confirmed: inline comments on a Copilot review can have
+  timestamps 1-2 seconds BEFORE the review's `submitted_at`, so a
+  `>=` filter drops them. Use `pull_request_review_id` instead.
 
 ## Complement: zero unresolved conversation threads
 

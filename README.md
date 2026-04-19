@@ -62,15 +62,27 @@ drives the resulting PRs to merge.
 
 ## Install
 
-### As a plugin
+### As a plugin (recommended)
 
-```bash
-/plugin install https://github.com/qubitrenegade/github-pr-review-loop
+Claude Code's plugin system uses a two-step marketplace flow: add
+this repo as a marketplace, then install the plugin from it.
+
+```
+/plugin marketplace add qubitrenegade/github-pr-review-loop
+/plugin install github-pr-review-loop@qubitrenegade-github-pr-review-loop
 ```
 
-### Manual
+The first command registers the repo as a marketplace (the marketplace
+definition lives at `.claude-plugin/marketplace.json`). The second
+installs the plugin named `github-pr-review-loop` from it.
 
-Copy `skills/github-pr-review-loop/` into your Claude config:
+Or use the interactive UI: `/plugin` → **Discover** tab → search for
+`github-pr-review-loop` → install.
+
+### Manual (skills-only, no plugin infra)
+
+If you just want the skill content and don't care about the plugin
+wrapper, copy the skill directory directly into your Claude config:
 
 ```bash
 # Personal (applies to every project)
@@ -80,9 +92,10 @@ cp -r skills/github-pr-review-loop ~/.claude/skills/
 cp -r skills/github-pr-review-loop .claude/skills/
 ```
 
-Restart your Claude Code session (or start a new one) and the skill's
-metadata is loaded; the full prompt loads when Claude decides the task
-matches.
+This mode installs the skill only; the `.claude-plugin/` manifest
+files aren't needed — skills work standalone. Restart your Claude
+Code session and the skill's metadata is loaded; the full prompt
+loads when Claude decides the task matches.
 
 ## Requirements
 

@@ -1,6 +1,6 @@
 ---
 name: github-pr-review-loop
-description: Drives a GitHub pull request through its Copilot review loop to merge. Triages each reviewer comment into apply (fix + cite commit SHA), dismiss (reply with empirical evidence), clarify (ask when ambiguous), or defer (valid but out of scope — file a follow-up issue). Uses the GitHub GraphQL requestReviews mutation to re-trigger Copilot after pushing fixes, and resolveReviewThread to close each thread loop. Checks every required CI check is green before considering merge. Stops when Copilot returns zero new findings or starts repeating itself. Scales to multi-PR batch rollouts via parallel worktrees and scheduled wake-ups. Use when a PR has an open Copilot review that needs to be driven to merge, when a batch of related issues needs to be shipped across many PRs, or when deciding whether a Copilot finding is legitimate or a hallucination.
+description: Drives a GitHub pull request through its Copilot review loop to merge using a disciplined triage (apply / dismiss / clarify / defer), empirical dismissal of hallucinations, GraphQL-based re-request, thread resolution, and concrete stop conditions. Use when a PR has an open Copilot review that needs to be driven to merge, when running a batch of related PRs in parallel, or when deciding whether a Copilot finding is legitimate or a hallucination.
 ---
 
 # GitHub PR Review Loop
@@ -140,25 +140,38 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 
 **A stop condition firing is not permission to merge — it's permission
 to stop chasing Copilot.** The merge gate is separate: every required
-CI check on the PR head must be in `SUCCESS` or `SKIPPED` state.
+CI check on the PR head must be in `SUCCESS` or `SKIPPED` state —
+**any other conclusion blocks merge**, including FAILURE, CANCELLED,
+TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL, and anything
+still in-progress.
 
 ```bash
 gh pr view <PR_NUM> --repo <owner>/<repo> --json statusCheckRollup --jq \
-  '{failed: [.statusCheckRollup[]? | select(.conclusion=="FAILURE") | .name],
-    pending: [.statusCheckRollup[]? | select(.status!="COMPLETED") | .name]}'
+  '{
+    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+    pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
+    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
+  }'
 ```
 
-If `failed` is non-empty: either fix the code (likely — the CI is
-telling you something real) or fix the workflow (if the failure
-reproduces on `main` unchanged, it's pre-existing infra, not this
-PR's fault — but don't merge past it; file or fix the infra in a
-dedicated PR first).
+**Interpret:**
 
-If `pending` is non-empty: wait. Don't merge mid-CI. Schedule another
-wake-up.
+- `blocking == [] && pending == []` → every completed check is SUCCESS
+  or SKIPPED, nothing in-flight → CI gate is clear.
+- `blocking != []` → investigate by conclusion. FAILURE → the code
+  or workflow is broken, fix it. CANCELLED → someone cancelled or a
+  concurrency group killed it, re-run. TIMED_OUT → the workflow
+  exceeded its limit, either fix the underlying slowness or raise
+  the timeout. ACTION_REQUIRED → usually a first-time-contributor
+  approval or secret-access prompt, handle it. Treat all of these
+  as blockers regardless of which non-SUCCESS conclusion fired.
+- `pending != []` → wait. Don't merge mid-CI. Schedule another
+  wake-up.
 
-Both empty → CI is green → merge is gated only on Copilot signal
-(stop conditions) and human approval if required.
+For a failed check: either fix the code (likely — CI is telling you
+something real) or fix the workflow (if the failure reproduces on
+`main` unchanged, it's pre-existing infra, not this PR's fault — but
+don't merge past it; file or fix the infra in a dedicated PR first).
 
 **Never use `gh pr merge --admin` to bypass a failing required check
 just because "main is also failing so it's not my PR's fault".** If
