@@ -212,7 +212,7 @@ combined commit (or one logical commit per category) keeps the review
 thread coherent:
 
 - Read all inline comments in one pass.
-- Write triage decisions next to each (apply / dismiss / clarify).
+- Write triage decisions next to each (apply / dismiss / clarify / defer).
 - Apply all the "apply" fixes, group by theme if sensible.
 - Commit once (or with semantic boundaries: fix, docs, style).
 - Push.

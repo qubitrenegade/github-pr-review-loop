@@ -95,6 +95,12 @@ complementary signal is about OUTGOING ones: every thread you
 engaged with has been resolved. A PR with 0 new findings AND 0
 unresolved threads is the cleanest merge state.
 
+Placeholder note: `<owner>` is the org/user, `<name>` is the bare
+repo name. Elsewhere in this doc `<owner>/<repo>` is the combined
+slug passed to REST endpoints; GraphQL's `repository(owner:, name:)`
+takes them as two separate fields, so this block uses `<name>`
+deliberately.
+
 ```bash
 # reviewThreads(first: 100) returns at most 100 threads — fine for
 # ordinary PRs but silently undercounts on PRs with more than that.
@@ -110,7 +116,7 @@ gh api graphql -f query='
         }
       }
     }
-  }' -F owner=<owner> -F name=<repo> -F number=<N> \
+  }' -F owner=<owner> -F name=<name> -F number=<N> \
   --jq '{
     total: .data.repository.pullRequest.reviewThreads.totalCount,
     sampled: (.data.repository.pullRequest.reviewThreads.nodes | length),
@@ -163,7 +169,7 @@ Graph the count over rounds. If the curve flattens into the noise
 floor (0-1 low-value comments per round), stop.
 
 This is different from "ignore round-4+ comments". Every comment still
-gets triaged (apply / dismiss / clarify). The stop decision is about
+gets triaged (apply / dismiss / clarify / defer). The stop decision is about
 whether to wait for another round, not whether to process comments
 already on the PR.
 

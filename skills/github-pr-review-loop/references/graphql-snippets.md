@@ -74,13 +74,20 @@ gh api graphql -f query='
       }
     }
   }' -F owner=<owner> -F name=<repo> -F number=<pr-with-copilot-review> \
-  --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | {id, login}'
+  --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | select(.author.login == "copilot-pull-request-reviewer") | {id, login}'
 ```
 
 `last: 20` pulls the 20 most recent reviews rather than the oldest
 20. On a PR that's been through many review cycles (especially
 multi-round loops), Copilot's reviews are near the end of the
 timeline; using `first:` without an `orderBy` can skip them.
+
+The extra `login == "copilot-pull-request-reviewer"` filter is so
+the query stays unambiguous on repos that use other bot reviewers
+(CI bots, third-party review services) which would otherwise also
+match `__typename == "Bot"`. If GitHub ever renames Copilot's bot
+account, drop the login filter, see all matching Bot reviews, and
+identify the right one manually.
 
 Any PR that has already been reviewed by Copilot will work. Save the
 resulting `id` as your `BOT_ID` for the `requestReviews` mutation.
@@ -277,7 +284,7 @@ UNRESOLVED=$(gh api graphql -f query='
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
         reviewThreads(first: 100) {
-          nodes { id isResolved comments(first: 20) { nodes { author { login } } } }
+          nodes { id isResolved comments(last: 20) { nodes { author { login } } } }
         }
       }
     }
@@ -299,6 +306,13 @@ done
 The filter `any(author == $ME)` limits resolution to threads YOU
 replied on. Don't bulk-resolve threads you haven't actually engaged
 with; that's drive-by closing without evidence.
+
+`comments(last: 20)` pulls the most recent 20 comments from each
+thread (not the earliest 20). Your reply is the most recent comment
+you made on the thread, so `last:` makes the "have I replied?" check
+reliable even on threads with more than 20 comments. For the edge
+case of a thread with 20+ comments where YOUR reply is older than
+the 20 most-recent, raise the limit or paginate.
 
 ## Check which reviews exist
 
