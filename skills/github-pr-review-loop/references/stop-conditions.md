@@ -123,7 +123,10 @@ If that count is 0 AND the review's `submitted_at`
 **committer** date, the latest pass was actually clean.
 
 ```bash
-LATEST_COMMIT_DATE=$(git -C "$REPO_DIR" log -1 --format=%cI HEAD)
+# Run from inside the checkout of $REPO, or set REPO_DIR to the
+# local path (REPO_DIR="<local-path-to-clone>"; then
+# git -C "$REPO_DIR" ...).
+LATEST_COMMIT_DATE=$(git log -1 --format=%cI HEAD)
 # then:  "$LAST_COPILOT_REVIEW_AT" > "$LATEST_COMMIT_DATE"  (ISO-8601 string
 # compare works correctly)
 ```
@@ -165,11 +168,14 @@ Placeholder note: `<owner>` is the org/user, `<name>` is the bare
 repo name. Earlier blocks in this doc used `REPO="<owner>/<repo>"` —
 the combined slug for REST endpoints. GraphQL's
 `repository(owner:, name:)` takes them as two separate fields, so
-this block needs two shell vars:
+this block needs three shell vars (the PR number is also referenced
+below):
 
 ```bash
 OWNER="<owner>"          # e.g. qubitrenegade
 NAME="<name>"            # bare repo name, e.g. github-pr-review-loop
+PR_NUM="<N>"             # e.g. 42 — same value as the REST sections'
+                         # PR_NUM if you're running from the same shell
 ```
 
 ```bash
