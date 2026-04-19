@@ -48,8 +48,8 @@ Waves landed as:
 |---|---|---|---|
 | 1 | Package metadata + API policy | #35, #36, #46, #49 | #64, #65 |
 | 2 | Features + infra | #37-#43, #47-#48, #57-#59 | #66-#77 (12 PRs) |
-| 3 | Feature completion | #50-#52, #60b | #78-#81 |
-| 4 | Docs | #53-#56, #58, #54 | #82-#86 |
+| 3 | Feature completion | #50-#52, #60 (part b — `add_global_option` override) | #78-#81 |
+| 4 | Docs | #53-#56, #58 (the #54 config-precedence doc landed here after #80 fail-fast merged) | #82-#86 |
 | 5 | Release cut + polish | version bump | #87 + follow-ups |
 
 Wave 2 had 12 PRs. The parallelism policy was the single biggest
