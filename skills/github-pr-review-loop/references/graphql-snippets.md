@@ -158,9 +158,15 @@ thread has an `isResolved` flag that drives the PR's "unresolved
 conversations" counter. To work with thread resolution you need the
 thread ID (not the comment ID).
 
+Variable convention for this file: `REPO=<owner>/<repo>` for REST
+endpoints (`repos/$REPO/...`), and `OWNER=<owner>` + `NAME=<repo>`
+as two separate fields for GraphQL `repository(owner:, name:)`
+queries. Don't reuse `REPO` as the bare-name GraphQL variable —
+copy/paste across sections will break.
+
 ```bash
 OWNER=<owner>
-REPO=<repo>
+NAME=<repo>
 PR_NUM=<pr-number>
 
 gh api graphql -f query='
@@ -182,7 +188,7 @@ gh api graphql -f query='
         }
       }
     }
-  }' -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUM" \
+  }' -F owner="$OWNER" -F name="$NAME" -F number="$PR_NUM" \
   --jq '.data.repository.pullRequest.reviewThreads.nodes[] | {id, isResolved, first_author: .comments.nodes[0].author.login, first_body: .comments.nodes[0].body[0:100]}'
 ```
 
@@ -228,7 +234,7 @@ Common case after a round of fixes: you've replied to 6 threads
 with apply SHAs, now you want to resolve them all in one shot.
 
 ```bash
-OWNER=<owner>; REPO=<repo>; PR_NUM=<N>; ME=<your-github-login>
+OWNER=<owner>; NAME=<repo>; PR_NUM=<N>; ME=<your-github-login>
 
 # 1. Get all unresolved threads
 UNRESOLVED=$(gh api graphql -f query='
@@ -240,7 +246,7 @@ UNRESOLVED=$(gh api graphql -f query='
         }
       }
     }
-  }' -F owner="$OWNER" -F name="$REPO" -F number="$PR_NUM" \
+  }' -F owner="$OWNER" -F name="$NAME" -F number="$PR_NUM" \
   --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select([.comments.nodes[].author.login] | any(. == "'"$ME"'")) | .id')
 
 # 2. Resolve each

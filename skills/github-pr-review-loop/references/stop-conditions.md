@@ -57,11 +57,11 @@ Check empirically:
 
 ```bash
 # When did the latest Copilot review submit?
-LAST=$(gh pr view <N> --repo <repo> --json reviews --jq \
+LAST=$(gh pr view <N> --repo <owner>/<repo> --json reviews --jq \
   '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | last | .submittedAt')
 
 # Count top-level inline comments created at or after that timestamp
-gh api "repos/<repo>/pulls/<N>/comments?per_page=100" --jq \
+gh api "repos/<owner>/<repo>/pulls/<N>/comments?per_page=100" --jq \
   "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at >= \"$LAST\")] | length"
 ```
 
