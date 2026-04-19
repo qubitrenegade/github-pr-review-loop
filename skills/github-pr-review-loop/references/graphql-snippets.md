@@ -62,7 +62,7 @@ gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
-        reviews(last: 20) {
+        reviews(last: 50) {
           nodes {
             author {
               __typename
@@ -73,14 +73,18 @@ gh api graphql -f query='
         }
       }
     }
-  }' -F owner=<owner> -F name=<repo> -F number=<pr-with-copilot-review> \
+  }' -F owner=<owner> -F name=<name> -F number=<pr-with-recent-copilot-review> \
   --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | select(.author.login == "copilot-pull-request-reviewer") | {id, login}'
 ```
 
-`last: 20` pulls the 20 most recent reviews rather than the oldest
-20. On a PR that's been through many review cycles (especially
+`last: 50` pulls the 50 most recent reviews rather than the oldest
+50. On a PR that's been through many review cycles (especially
 multi-round loops), Copilot's reviews are near the end of the
-timeline; using `first:` without an `orderBy` can skip them.
+timeline; using `first:` without an `orderBy` can skip them. 50
+covers the typical review-loop depth (clickwork 1.0 topped out
+around 8 per PR); if you're on a PR that has genuinely had more
+than 50 reviews, pass `after:` cursor pagination or pick a less
+saturated PR from the same repo.
 
 The extra `login == "copilot-pull-request-reviewer"` filter is so
 the query stays unambiguous on repos that use other bot reviewers
