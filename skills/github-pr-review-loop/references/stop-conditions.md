@@ -96,22 +96,37 @@ engaged with has been resolved. A PR with 0 new findings AND 0
 unresolved threads is the cleanest merge state.
 
 ```bash
+# reviewThreads(first: 100) returns at most 100 threads — fine for
+# ordinary PRs but silently undercounts on PRs with more than that.
+# totalCount gives the exact number so we can sanity-check before
+# relying on the isResolved-filter result.
 gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
         reviewThreads(first: 100) {
+          totalCount
           nodes { isResolved }
         }
       }
     }
   }' -F owner=<owner> -F name=<repo> -F number=<N> \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
+  --jq '{
+    total: .data.repository.pullRequest.reviewThreads.totalCount,
+    sampled: (.data.repository.pullRequest.reviewThreads.nodes | length),
+    unresolved: ([.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length)
+  }'
 ```
 
-Zero here means every thread on the PR has been explicitly closed
-(fixed, dismissed with evidence, deferred with issue, or clarified
-+ acted on). Humans skimming the PR can trust that nothing slipped.
+If `total > sampled` (over 100 threads on the PR), paginate via
+`pageInfo.endCursor` + `after:` before trusting the unresolved
+count — see the pagination note in
+[graphql-snippets.md](graphql-snippets.md).
+
+Zero unresolved (when `total == sampled`) means every thread on the
+PR has been explicitly closed (fixed, dismissed with evidence,
+deferred with issue, or clarified + acted on). Humans skimming the
+PR can trust that nothing slipped.
 
 If this count is >0 but the "new findings" count is 0, you have
 open threads you didn't resolve. Either resolve them now (if they

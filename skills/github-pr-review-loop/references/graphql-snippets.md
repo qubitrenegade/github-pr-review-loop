@@ -62,7 +62,7 @@ gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
-        reviews(first: 10) {
+        reviews(last: 20) {
           nodes {
             author {
               __typename
@@ -76,6 +76,11 @@ gh api graphql -f query='
   }' -F owner=<owner> -F name=<repo> -F number=<pr-with-copilot-review> \
   --jq '.data.repository.pullRequest.reviews.nodes[] | select(.author.__typename == "Bot") | {id, login}'
 ```
+
+`last: 20` pulls the 20 most recent reviews rather than the oldest
+20. On a PR that's been through many review cycles (especially
+multi-round loops), Copilot's reviews are near the end of the
+timeline; using `first:` without an `orderBy` can skip them.
 
 Any PR that has already been reviewed by Copilot will work. Save the
 resulting `id` as your `BOT_ID` for the `requestReviews` mutation.
@@ -132,9 +137,12 @@ if [ -z "$LAST_COPILOT" ]; then
   exit 1
 fi
 
-# Pull only top-level comments (not replies) newer than that timestamp
+# Pull only top-level comments (not replies) from the latest
+# review. Use `>=` not `>` so comments created in the same second
+# as the review's submittedAt (common since GitHub timestamps are
+# second-granular) don't get filtered out.
 gh api --paginate "repos/$REPO/pulls/$PR_NUM/comments?sort=created&direction=desc&per_page=100" --jq \
-  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at > \"$LAST_COPILOT\")] | .[] | {id, line, path, body: (.body[0:200])}"
+  "[.[] | select(.user.login==\"Copilot\") | select(.in_reply_to_id==null) | select(.created_at >= \"$LAST_COPILOT\")] | .[] | {id, line, path, body: (.body[0:200])}"
 ```
 
 `in_reply_to_id == null` filters out Copilot's replies to your replies
