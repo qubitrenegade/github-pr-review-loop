@@ -350,23 +350,25 @@ against).
 
 ## Check CI status on the current PR head
 
-Whitelist-based: only `SUCCESS` and `SKIPPED` count as green; any
-other completed conclusion (FAILURE, CANCELLED, TIMED_OUT,
-ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL) blocks merge.
+Whitelist-based: `SUCCESS`, `SKIPPED`, and `NEUTRAL` count as green
+(matches GitHub's own merge gate — NEUTRAL is treated as success for
+required checks). Any other completed conclusion (FAILURE,
+CANCELLED, TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE) blocks merge.
 
 ```bash
 gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
   '{
-     blocking: [.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+     blocking: [.statusCheckRollup[] | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
      pending: [.statusCheckRollup[] | select(.status != "COMPLETED") | .name],
-     green: ([.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
+     green: ([.statusCheckRollup[] | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))] | length)
    }'
 ```
 
 Interpret:
 
 - Empty `blocking`, empty `pending` → every completed check is green
-  (SUCCESS or SKIPPED), nothing in-flight → ready to consider merging.
+  (SUCCESS, SKIPPED, or NEUTRAL), nothing in-flight → ready to
+  consider merging.
 - Non-empty `blocking` → investigate by conclusion. FAILURE means
   fix the code or the workflow (infra if the same check also fails
   on `main` — see `stop-conditions.md` "failure-mode stops"
@@ -376,10 +378,16 @@ Interpret:
 - Non-empty `pending` → wait; use a scheduled wake-up, not busy-poll.
 
 Why not a FAILURE-only filter: GitHub's check conclusions include
-CANCELLED, TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, and NEUTRAL.
-A blacklist on FAILURE lets those slip through and falsely flags the
+CANCELLED, TIMED_OUT, ACTION_REQUIRED, and STARTUP_FAILURE. A
+blacklist on FAILURE lets those slip through and falsely flags the
 PR as green when a required check was killed mid-run or is waiting
 on manual intervention.
+
+Why NEUTRAL is in the green set: GitHub's required-status-check and
+dependent-check logic both treat NEUTRAL as a passing outcome.
+Tools (linters, code-scanners) that want to signal "I ran and found
+nothing actionable" use NEUTRAL rather than SUCCESS. Treating it as
+blocking would be stricter than GitHub's own merge gate.
 
 ## Get the PR's GraphQL node ID (used by mutations)
 

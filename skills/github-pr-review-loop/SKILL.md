@@ -140,31 +140,32 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 
 **A stop condition firing is not permission to merge — it's permission
 to stop chasing Copilot.** The merge gate is separate: every required
-CI check on the PR head must be in `SUCCESS` or `SKIPPED` state —
-**any other conclusion blocks merge**, including FAILURE, CANCELLED,
-TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL, and anything
-still in-progress.
+CI check on the PR head must be in a green conclusion. Per GitHub's
+required-check docs, the green set is **SUCCESS, SKIPPED, and
+NEUTRAL** (GitHub treats NEUTRAL as success for dependent checks and
+for required-check gating). Anything else — FAILURE, CANCELLED,
+TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, or still in-progress —
+blocks merge.
 
 ```bash
 gh pr view <PR_NUM> --repo <owner>/<repo> --json statusCheckRollup --jq \
   '{
-    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
     pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
-    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
+    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))] | length)
   }'
 ```
 
 **Interpret:**
 
-- `blocking == [] && pending == []` → every completed check is SUCCESS
-  or SKIPPED, nothing in-flight → CI gate is clear.
+- `blocking == [] && pending == []` → every completed check is SUCCESS,
+  SKIPPED, or NEUTRAL → CI gate is clear (matches GitHub's own gate).
 - `blocking != []` → investigate by conclusion. FAILURE → the code
   or workflow is broken, fix it. CANCELLED → someone cancelled or a
   concurrency group killed it, re-run. TIMED_OUT → the workflow
   exceeded its limit, either fix the underlying slowness or raise
   the timeout. ACTION_REQUIRED → usually a first-time-contributor
-  approval or secret-access prompt, handle it. Treat all of these
-  as blockers regardless of which non-SUCCESS conclusion fired.
+  approval or secret-access prompt, handle it.
 - `pending != []` → wait. Don't merge mid-CI. Schedule another
   wake-up.
 

@@ -18,38 +18,39 @@ arbitrary thresholds.
 ## Merge precondition: required CI checks are green
 
 Before any stop condition becomes a merge decision, **every required
-CI check on the PR head must be in `SUCCESS` (or `SKIPPED`) state.**
-Any other conclusion blocks merge — FAILURE, CANCELLED, TIMED_OUT,
-ACTION_REQUIRED, STARTUP_FAILURE, NEUTRAL, or still in-progress. A
-clean Copilot pass on red CI is not a merge — it's permission to
-stop chasing review comments while the CI problem still needs
-solving.
+CI check on the PR head must be in a green conclusion.** Per GitHub's
+required-check docs, the green set is **SUCCESS, SKIPPED, and
+NEUTRAL** (GitHub treats NEUTRAL as success for required-check
+gating and for dependent-check evaluation). Anything else — FAILURE,
+CANCELLED, TIMED_OUT, ACTION_REQUIRED, STARTUP_FAILURE, or still
+in-progress — blocks merge. A clean Copilot pass on red CI is not a
+merge — it's permission to stop chasing review comments while the
+CI problem still needs solving.
 
-Use a whitelist (SUCCESS/SKIPPED are the only green conclusions),
-not a blacklist (FAILURE alone misses CANCELLED, TIMED_OUT, etc. and
-falsely green-lights a broken gate).
+Use a whitelist (SUCCESS, SKIPPED, NEUTRAL are the green
+conclusions), not a blacklist (FAILURE alone misses CANCELLED,
+TIMED_OUT, etc. and falsely green-lights a broken gate).
 
 ```bash
 gh pr view <N> --repo <owner>/<repo> --json statusCheckRollup --jq \
   '{
-    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion != "SUCCESS" and .conclusion != "SKIPPED")) | {name, conclusion}],
+    blocking: [.statusCheckRollup[]? | select(.status == "COMPLETED" and .conclusion != "SUCCESS" and .conclusion != "SKIPPED" and .conclusion != "NEUTRAL") | {name, conclusion}],
     pending: [.statusCheckRollup[]? | select(.status != "COMPLETED") | .name],
-    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED"))] | length)
+    green: ([.statusCheckRollup[]? | select(.status == "COMPLETED" and (.conclusion == "SUCCESS" or .conclusion == "SKIPPED" or .conclusion == "NEUTRAL"))] | length)
   }'
 ```
 
 **Interpret:**
 
 - `blocking == [] && pending == []` → every completed check is
-  SUCCESS or SKIPPED, nothing in-flight → CI gate is clear.
-- `blocking != []` → investigate by conclusion. Every non-SUCCESS /
-  non-SKIPPED completed conclusion blocks merge. FAILURE means the
+  SUCCESS, SKIPPED, or NEUTRAL → CI gate is clear (matches GitHub's
+  own merge gate).
+- `blocking != []` → investigate by conclusion. FAILURE means the
   code or workflow is broken — if the failure reproduces on `main`
   unchanged it's pre-existing infra (fix it in a dedicated PR, DO
   NOT admin-merge past). CANCELLED / TIMED_OUT / STARTUP_FAILURE
   usually means re-run. ACTION_REQUIRED usually means a
-  first-time-contributor approval or a secret-access prompt. NEUTRAL
-  is rare — treat as block-and-investigate.
+  first-time-contributor approval or a secret-access prompt.
 - `pending != []` → wait. Don't merge mid-CI. Schedule another
   wake-up.
 
