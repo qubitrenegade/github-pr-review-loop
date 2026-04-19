@@ -19,9 +19,8 @@ API. All shell-safe; all assume `gh` is authenticated.
 
 ## Copilot's bot ID
 
-On github.com, Copilot's PR reviewer is a `Bot` account (REST
-`user.type = "Bot"`, `user.login = "Copilot"`) with this global node
-ID:
+On github.com, Copilot's PR reviewer is a `Bot` account with this
+global node ID:
 
 ```
 BOT_kgDOCnlnWA
@@ -35,6 +34,23 @@ or a future github.com where the ID has rotated.
 
 Use it in the `botIds` field of `requestReviews`. Do NOT pass it as
 `userIds` — Copilot is a bot, not a user, and userIds will 404.
+
+### Gotcha: the bot has two different login strings across APIs
+
+Copilot's identifier is not consistent across GitHub's API surfaces:
+
+| API endpoint | Field | Value |
+|---|---|---|
+| REST `/pulls/<N>/comments` | `user.login` | `Copilot` |
+| REST `/pulls/<N>/comments` | `user.type` | `Bot` |
+| GraphQL `reviews.nodes[].author.login` | | `copilot-pull-request-reviewer` |
+| GraphQL `reviewThreads.nodes[].comments.nodes[].author.login` | | `copilot-pull-request-reviewer` |
+
+Filtering comments via REST: match `"Copilot"`.
+Filtering review threads via GraphQL: match `"copilot-pull-request-reviewer"`.
+Getting this wrong silently returns an empty result — no error, just
+zero matches. Double-check with one unfiltered query first if your
+filter returns unexpectedly empty.
 
 ### Discovering the bot ID at runtime
 
