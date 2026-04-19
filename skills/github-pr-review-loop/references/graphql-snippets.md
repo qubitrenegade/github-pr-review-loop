@@ -343,7 +343,7 @@ the 20 most-recent, raise the limit or paginate.
 
 ```bash
 gh pr view "$PR_NUM" --repo "$REPO" --json reviews --jq \
-  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | {count: length, last: last | .submittedAt}'
+  '[.reviews[] | select(.author.login=="copilot-pull-request-reviewer")] | {count: length, last: (last | .submittedAt)}'
 ```
 
 Useful for confirming whether a re-request actually fired a new pass.
