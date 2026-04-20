@@ -95,7 +95,7 @@ Per spec SKILL.md change #4. Find the existing final paragraph of the `## After 
 Immediately after that paragraph (before the `## How to re-trigger review after pushing fixes` heading), insert a blank line followed by:
 
 ```markdown
-For `Acknowledge`, do not resolve. The thread intentionally stays open until the maintainer decides the underlying design question. Resolving early would make the PR look merge-ready when a design decision is actually still pending. Once the maintainer weighs in, convert the thread into an Apply (accept the vote, edit the plan, cite SHA) or a Dismiss (overrule the vote with the maintainer's chosen alternative), and resolve as part of that follow-up action. See [references/triage-patterns.md](references/triage-patterns.md) under "Acknowledge" for the full pattern.
+For `Acknowledge`, do not resolve. The thread intentionally stays open until the maintainer decides the underlying design question. Resolving early would make the PR look merge-ready when a design decision is actually still pending. Once the maintainer weighs in, convert the thread into an Apply (accept the vote, edit the plan/spec doc, cite SHA) or a Dismiss (overrule the vote with the maintainer's chosen alternative), and resolve as part of that follow-up action. See [references/triage-patterns.md](references/triage-patterns.md) under "Acknowledge" for the full pattern.
 ```
 
 - [ ] **Step 6: Edit #5 — add mode-shift bullet to Stop conditions list**
@@ -274,18 +274,18 @@ On the clickwork Sigstore plan PR #97 round 3, after the prose had stabilised, C
 
 (Backticks around `@qubitrenegade` are intentional *in this reference doc* to avoid GitHub firing a mention notification every time the doc is rendered. In an actual PR reply you write the mention in plain text — no backticks — so the notification fires and the maintainer gets pinged.)
 
-Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
+Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan/spec doc to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
 
 **When NOT to use Acknowledge:**
 
 - The finding is a bug claim, not a vote. Those are apply/dismiss.
 - The question has an objectively correct answer that verification can establish. Those are apply/dismiss.
 - The decision is a preference *you* can reasonably make. Don't punt implementation choices to the maintainer via Acknowledge.
-- The PR isn't a plan/spec PR. Design decisions rarely live in implementation PRs; if Copilot is voting on one there, the PR probably should have been preceded by a plan PR. Flag to the maintainer rather than accumulating Acknowledge threads.
+- The PR isn't a plan/spec PR. Design decisions rarely live in implementation PRs; if Copilot is voting on one there, the PR probably should have been preceded by a plan or spec PR. Flag to the maintainer rather than accumulating Acknowledge threads.
 
 **Why the thread stays unresolved:**
 
-An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
+An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan/spec doc to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
 
 **The mode-shift signal:**
 
@@ -426,7 +426,7 @@ Update the slash-form enumeration inside the parentheses from `apply / dismiss /
 Per spec stop-conditions.md change #2b. After the paragraph you just updated in Step 4 (the one starting "This is different from..."), and before the next `## User override of the review loop` heading, insert a blank line and:
 
 ```markdown
-**Mode-shift sub-signal.** On plan or spec PRs, "volume drying up" often has a characteristic shape: the first few rounds surface prose-level issues (factual errors, stale references, internal inconsistencies) which get applied or dismissed normally. Once the prose stabilises, Copilot shifts modes and starts voting on the open design questions embedded in the doc — the round is no longer surfacing bugs, it's surfacing Acknowledge-class findings (see [triage-patterns.md](triage-patterns.md) under "Acknowledge"). That mode shift is itself a stop signal: the plan doc is substantively clean; the remaining work is the maintainer's decision, not another Copilot round. When a round's findings are predominantly Acknowledge, the review loop has done what it can, and what unblocks progress next is maintainer time, not another re-request.
+**Mode-shift sub-signal.** On plan or spec PRs, "volume drying up" often has a characteristic shape: the first few rounds surface prose-level issues (factual errors, stale references, internal inconsistencies) which get applied or dismissed normally. Once the prose stabilises, Copilot shifts modes and starts voting on the open design questions embedded in the doc — the round is no longer surfacing bugs, it's surfacing Acknowledge-class findings (see [triage-patterns.md](triage-patterns.md) under "Acknowledge"). That mode shift is itself a stop signal: the doc is substantively clean; the remaining work is the maintainer's decision, not another Copilot round. When a round's findings are predominantly Acknowledge, the review loop has done what it can, and what unblocks progress next is maintainer time, not another re-request.
 ```
 
 - [ ] **Step 6: Verify edits landed**

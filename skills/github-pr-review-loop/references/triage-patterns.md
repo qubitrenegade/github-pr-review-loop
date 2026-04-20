@@ -201,18 +201,18 @@ On the clickwork Sigstore plan PR #97 round 3, after the prose had stabilised, C
 
 (Backticks around `@qubitrenegade` are intentional *in this reference doc* so it stays a literal example rather than a live mention, and to avoid accidental pings if the snippet is copy-pasted into a real issue or PR. In an actual PR reply you write the mention in plain text — no backticks — so the maintainer gets pinged.)
 
-Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
+Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan/spec doc to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
 
 **When NOT to use Acknowledge:**
 
 - The finding is a bug claim, not a vote. Those are apply/dismiss.
 - The question has an objectively correct answer that verification can establish. Those are apply/dismiss.
 - The decision is a preference *you* can reasonably make. Don't punt implementation choices to the maintainer via Acknowledge.
-- The PR isn't a plan/spec PR. Design decisions rarely live in implementation PRs; if Copilot is voting on one there, the PR probably should have been preceded by a plan PR. Flag to the maintainer rather than accumulating Acknowledge threads.
+- The PR isn't a plan/spec PR. Design decisions rarely live in implementation PRs; if Copilot is voting on one there, the PR probably should have been preceded by a plan or spec PR. Flag to the maintainer rather than accumulating Acknowledge threads.
 
 **Why the thread stays unresolved:**
 
-An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
+An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan/spec doc to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
 
 **The mode-shift signal:**
 
