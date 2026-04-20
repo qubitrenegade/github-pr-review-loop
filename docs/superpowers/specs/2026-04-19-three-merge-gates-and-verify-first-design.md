@@ -22,7 +22,7 @@ This spec describes a follow-up **implementation PR** (separate from the PR that
 - `skills/github-pr-review-loop/references/stop-conditions.md`
 - `skills/github-pr-review-loop/references/triage-patterns.md`
 
-No code changes. No new primitives. Existing guidance is preserved and re-parented under clearer section headings.
+No code changes. No new primitives. Most existing guidance is preserved and re-parented under clearer section headings, with limited net-new guidance to make merge authorization explicit — including the conditional merge grant pattern (not previously documented) and the verify-first framing on Apply (previously only implicit under Dismiss).
 
 **Out of scope** (each gets its own later PR): #2 (Acknowledge triage category), #4 (reply+resolve helper), #6 (outside-the-repo blockers), #7 (worktree cleanup).
 
