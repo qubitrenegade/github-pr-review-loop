@@ -7,11 +7,12 @@ arbitrary thresholds.
 ## Contents
 
 - Merge precondition: required CI checks are green
+- Merge precondition: user authorization
 - Primary stop: zero new findings on a Copilot pass
 - Complement: zero unresolved conversation threads
 - Secondary stop: Copilot repeats itself
 - Tertiary stop: suggestion volume dries up
-- User escape hatch
+- User override of the review loop
 - Failure-mode stops
 - Anti-patterns (don't stop for these reasons)
 - Putting it together
@@ -67,6 +68,21 @@ gh pr view "$PR_NUM" --repo "$REPO" --json statusCheckRollup --jq \
 See [case-study-clickwork-1.0.md](case-study-clickwork-1.0.md) for
 the Release-smoke episode — concrete example of "failure reproduces
 on main → fix the infra first, don't bypass".
+
+## Merge precondition: user authorization
+
+User authorization is one of three merge gates, peer to the CI and Copilot review loop gates. None of the three alone implies permission to merge.
+
+Two modes grant the authorization:
+
+- **Standing** — the maintainer is in the session and makes the merge call themselves (in-session "merge it", or the routine case of hitting the merge button after a review pass).
+- **Conditional grant** — the maintainer grants permission up-front with scoped caveats, typically before stepping away. Template:
+
+  > "Merge when Copilot returns zero new comments AND CI is green. Wait for me if there are repeated comments, comments you have questions about, or red CI."
+
+Any triggered caveat revokes the grant and returns to the default ("wait for maintainer"). Don't reinterpret caveats in light of how close the PR feels to merging — the whole point of caveat language is to stop you when a particular signal fires, regardless of surrounding context.
+
+Absent a grant, the default is ping + wait. A converged review loop + green CI alone is NOT permission to merge. Every merge needs all three gates: CI green (above), review loop converged (below), and user authorization (this section).
 
 ## Primary stop: zero new findings
 
@@ -250,14 +266,11 @@ gets triaged (apply / dismiss / clarify / defer). The stop decision is about
 whether to wait for another round, not whether to process comments
 already on the PR.
 
-## User escape hatch
+## User override of the review loop
 
-If the human maintainer says "merge it", that overrides every other
-signal. They have context you don't — maybe there's a release cutoff,
-maybe the remaining comments are known non-issues, maybe they've
-reviewed inline and are satisfied.
+If the maintainer says "stop" in-session, that overrides every other review-loop signal for continuing the review. Don't re-litigate. If the maintainer says "merge it," treat that under "Merge precondition: user authorization" above rather than in this override section — "merge it" is a merge-authorization signal, not a review-loop-stop signal.
 
-When the user says merge, merge. Don't re-litigate.
+This section exists because explicit maintainer "stop" (without an accompanying merge instruction) is a valid review-loop-stop signal: "I don't want you chasing this PR any further, regardless of whether it's merging now." Respect it.
 
 ## Failure-mode stops
 
@@ -313,14 +326,10 @@ that will follow.
 The stop decision is: "has the reviewer told me what it has to tell
 me, and have I acted on it?"
 
-- Zero new comments on the latest pass → yes and yes → merge.
-- New comments are repeats of addressed threads → yes and yes (action
-  was the earlier fix) → merge.
-- Volume trending to zero, and each remaining comment has been
-  triaged under the usual apply/dismiss/clarify/defer → yes and
-  yes → merge. Triage the nits the same way as any other finding;
-  don't skip them because they're small.
-- User says merge → yes → merge.
+- Zero new comments on the latest pass → review signal exhausted. Merge if CI green AND user authorized (standing or conditional grant); otherwise stop chasing and ping maintainer.
+- New comments are repeats of addressed threads → review signal exhausted (action was the earlier fix). Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer.
+- Volume trending to zero, and each remaining comment has been triaged under the usual apply/dismiss/clarify/defer → review signal exhausted. Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer. Triage the nits the same way as any other finding; don't skip them because they're small.
+- User says merge → merge authorization gate is satisfied (Standing mode). Verify CI green and that the review loop has at least one stop signal fired before merging — "merge authorization" alone doesn't skip the other two gates.
 
 If none of those fire and the reviewer is still producing signal, run
 another round.
