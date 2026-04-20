@@ -16,7 +16,7 @@ Two related framing gaps in the `github-pr-review-loop` skill, both caught durin
 
 ### Scope
 
-Bundled docs PR touching three files:
+This spec describes a follow-up **implementation PR** (separate from the PR that lands this spec doc). The implementation PR will be a bundled docs PR touching three files:
 
 - `skills/github-pr-review-loop/SKILL.md`
 - `skills/github-pr-review-loop/references/stop-conditions.md`
@@ -144,14 +144,14 @@ Docs-only PR; "testing" means:
 
 1. **Read-through check** — after edits, re-read each file top-to-bottom to confirm the three-gate framing is consistent across all three files. No section contradicts another.
 2. **Link check** — cross-references between sections (e.g., SKILL.md's "see Merge authorization" pointing at stop-conditions.md's new section) actually resolve.
-3. **Grep sweep** — search for old framing phrases (`permission to merge`, `stop condition`, `merge it`) across the three files to confirm no orphan copies of the old model remain.
+3. **Grep sweep** — search for old *conflation* phrases specifically (e.g., `yes and yes → merge`, direct `stop → merge` equations, `permission to merge` used where the correct meaning is "permission to stop chasing") across the three files. `stop condition` itself is a valid term that stays, so don't grep for it — it will always hit and isn't useful signal.
 4. **Copilot review loop** — run the normal drill per the skill itself. Dogfood it on the PR.
 
 No automated tests. No code changes.
 
 ## Out-of-scope / follow-ups
 
-Issues from the same batch that are explicitly NOT addressed in this PR:
+Issues from the same batch that are explicitly NOT addressed in the implementation PR this spec describes:
 
 - **#2** (Acknowledge triage category for design-voting): separate docs PR later.
 - **#4** (reply+resolve helper script): biggest effort; separate plan + implementation cycle.
