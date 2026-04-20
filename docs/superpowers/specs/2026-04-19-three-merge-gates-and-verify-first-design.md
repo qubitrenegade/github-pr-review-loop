@@ -50,7 +50,7 @@ Existing CI body stays as-is.
 
 ~150 words covering:
 
-- User authorization is one of three merge gates, peer to the Copilot-review and CI gates. None of the three alone implies permission to merge.
+- User authorization is one of three merge gates, peer to the Copilot review loop and CI gates. None of the three alone implies permission to merge.
 - Two modes:
   - **Standing** — the maintainer is in the session and makes the merge call themselves.
   - **Conditional grant** — the maintainer grants permission up-front with scoped caveats, typically before stepping away. Example template:
@@ -80,7 +80,7 @@ Insert immediately after the existing "Merge precondition: required CI checks ar
 
 ~180 words covering:
 
-- User authorization is one of three merge gates, peer to the CI and Copilot-review gates. None of the three alone implies permission to merge.
+- User authorization is one of three merge gates, peer to the CI and Copilot review loop gates. None of the three alone implies permission to merge.
 - Two modes: standing (maintainer in-session) or conditional grant (scoped up-front permission).
 - Conditional-grant template (same as SKILL.md):
   > "Merge when Copilot returns zero new comments AND CI is green. Wait for me if there are repeated comments, comments you have questions about, or red CI."
