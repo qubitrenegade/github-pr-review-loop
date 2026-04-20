@@ -24,13 +24,15 @@ Observed behavior without this framing: ~15 minutes were spent iterating on DNS,
 
 ### Scope
 
-Single-file docs PR touching `skills/github-pr-review-loop/references/stop-conditions.md`:
+This document describes a separate follow-up implementation PR (this PR, which lands the spec, is not that one).
+
+The implementation PR will be a single-file docs PR touching `skills/github-pr-review-loop/references/stop-conditions.md`:
 
 - New peer section `## Outside-the-repo blockers`, inserted between the existing `## Failure-mode stops` and `## Anti-patterns — don't stop for these reasons`.
 - One-line pointer appended to the end of the existing `## Failure-mode stops` section so a reader scanning that section finds the new one.
 - Contents TOC updated with the new section entry.
 
-No code changes. No other files touched.
+No code changes in the implementation PR. No other files touched in the implementation PR. (This spec PR, on the other hand, adds only the spec file.)
 
 **Out of scope** (each gets its own later PR): #4 (reply+resolve helper), #7 (worktree cleanup).
 
@@ -109,8 +111,8 @@ The resulting TOC (after this PR's edit):
 
 Docs-only PR; "testing" means:
 
-1. **Read-through check** — read stop-conditions.md top-to-bottom after edits. Confirm the new section reads cleanly between Failure-mode stops and Anti-patterns. Confirm the Failure-mode-stops cross-reference pointer lands.
-2. **Link/anchor check** — the cross-reference from `## Failure-mode stops` to "Outside-the-repo blockers" resolves (same-file anchor). The new section's Contents TOC entry matches the heading text exactly.
+1. **Read-through check** — read stop-conditions.md top-to-bottom after edits. Confirm the new section reads cleanly between Failure-mode stops and Anti-patterns. Confirm the Failure-mode-stops pointer clearly directs readers to Outside-the-repo blockers.
+2. **Pointer / heading check** — confirm the reference from `## Failure-mode stops` to Outside-the-repo blockers is present and unambiguous. The pointer is prose (`see "Outside-the-repo blockers"`), not a markdown link, so matching-section-name is what makes it resolve; the new section's Contents TOC entry should match the heading text exactly.
 3. **Grep sweep** — search for the `5-minute check` keywords (should appear in the new section and nowhere else) and for `Outside-the-repo blockers` heading (should appear in both TOC and section).
 4. **Copilot review loop** — run the normal drill per the skill itself.
 
