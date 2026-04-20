@@ -24,8 +24,7 @@ this skill doesn't apply — standard PR-review habits are fine.
 
 ## The triage — apply, dismiss, clarify, or defer
 
-Every Copilot inline comment is one of four things. Decide explicitly;
-don't guess.
+Every Copilot inline comment is a claim. Verify the claim first, then triage it into one of four dispositions: apply, dismiss, clarify, or defer. Verification is step one for *every* disposition, not just Dismiss.
 
 **Apply** — the finding is real. Fix it in a follow-up commit, push,
 then reply to the comment thread citing the commit SHA so the thread is
@@ -149,6 +148,8 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 
 ## Before merging: CI must be green
 
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, or user override), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
+
 **A stop condition firing is not permission to merge — it's permission
 to stop chasing Copilot.** The merge gate is separate: every required
 CI check on the PR head must be in a green conclusion. Per GitHub's
@@ -194,7 +195,24 @@ that's a broken gate, fix it first. See
 "Failure-mode stops" for the clickwork Release-smoke episode that
 taught this lesson the hard way.
 
+## Merge authorization
+
+User authorization is one of three merge gates, peer to the Copilot review loop and CI gates. None of the three alone implies permission to merge.
+
+Two modes grant the authorization:
+
+- **Standing** — the maintainer is in the session and makes the merge call themselves. This covers both "user says merge" off-ramps mid-loop and the routine case of the maintainer reviewing a PR and hitting merge.
+- **Conditional grant** — the maintainer grants permission up-front with scoped caveats, typically before stepping away. Example template:
+
+  > "Merge when Copilot returns zero new comments AND CI is green. Wait for me if there are repeated comments, comments you have questions about, or red CI."
+
+Any triggered caveat revokes the grant. If the grant says "wait on repeats," a repeat means wait, not "probably fine." Don't reinterpret caveats in light of how close the PR feels to merging.
+
+Absent an explicit grant, the default is ping + wait. A converged review loop + green CI alone = permission to stop chasing review comments, not permission to merge.
+
 ## Stop conditions
+
+Every stop condition is "stop reviewing," not "ready to merge." Merging requires CI green (previous section) AND user authorization (see Merge authorization). A fired stop condition with red CI or no merge grant = permission to stop chasing review comments, nothing more.
 
 Stop when any of these fires. Don't keep chasing.
 
@@ -207,7 +225,6 @@ Stop when any of these fires. Don't keep chasing.
 - **Suggestions are drying up in volume.** Round 1 had 7 findings,
   round 3 had 2, round 4 has 1 — the signal is consumed. Next pass is
   usually empty.
-- **The user says "merge it".** Explicit off-ramp, always valid.
 
 See [references/stop-conditions.md](references/stop-conditions.md) for
 the full list including failure-mode stops (reviewer is hallucinating
