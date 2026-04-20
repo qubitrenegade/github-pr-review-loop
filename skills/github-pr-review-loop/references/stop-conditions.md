@@ -332,7 +332,7 @@ me, and have I acted on it?"
 
 - Zero new comments on the latest pass → review signal exhausted. Merge if CI green AND user authorized (standing or conditional grant); otherwise stop chasing and ping maintainer.
 - New comments are repeats of addressed threads → review signal exhausted (action was the earlier fix). Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer.
-- Volume trending to zero, and each remaining comment has been triaged under the usual apply/dismiss/clarify/defer → review signal exhausted. Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer. Triage the nits the same way as any other finding; don't skip them because they're small.
+- Volume trending to zero, and each remaining comment has been triaged under the usual apply/dismiss/clarify/defer/acknowledge → review signal exhausted. Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer. Triage the nits the same way as any other finding; don't skip them because they're small.
 - User says merge → merge authorization gate is satisfied (Standing mode). Verify CI green and that the review loop has at least one stop signal fired before merging — "merge authorization" alone doesn't skip the other two gates.
 
 If none of those fire and the reviewer is still producing signal, run
