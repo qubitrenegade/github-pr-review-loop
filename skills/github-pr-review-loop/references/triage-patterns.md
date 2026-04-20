@@ -5,14 +5,40 @@ checklist for dismissals and the discipline around resolving threads.
 
 ## Contents
 
-- Apply — fix + cite commit SHA
+- Verify first — every finding is a claim, verify before triaging
+- Evidence checklist (what to run for each claim type)
+- Apply — fix + cite commit SHA (include verification for non-obvious claims)
 - Dismiss — reply with empirical evidence
 - Clarify — ask before guessing
 - Defer — out-of-scope but valid, file a follow-up issue
 - Resolve the thread after replying
-- Evidence checklist (what to run for each claim type)
 - Batching multiple findings into one push
 - Special cases
+
+## Verify first
+
+Every Copilot finding is a *claim*. The discipline is the same regardless of disposition: verify the claim empirically, then pick based on what verification showed.
+
+- Claim correct → **Apply** (the fix is real; include verification evidence in the reply when the claim was non-obvious).
+- Claim wrong → **Dismiss** with that evidence.
+- Can't tell → **Clarify**.
+- Correct but out-of-scope → **Defer** with follow-up issue.
+
+Applying without verifying is the more subtle trap than dismissing without verifying — Copilot confidently misremembers APIs, endpoints, and version strings, so a blindly-applied "just do what the reviewer said" can make the PR worse in a new way. See the Evidence Checklist (below) for commands to run per claim type.
+
+## Evidence checklist
+
+What to run when dismissing each class of claim.
+
+| Claim type | Verification command | Notes |
+|---|---|---|
+| "Symbol doesn't exist" | `grep -rn 'symbol_name' src/ tests/` | Check the claim's scope — maybe it exists in a file the reviewer didn't scan. |
+| "Import would fail" | `python -c "from module import thing; print(thing)"` | Do this in a fresh venv or the project's venv, not wherever your shell landed. |
+| "Anchor / link broken" | `grep -n '^## Heading' docs/FILE.md` | GitHub anchors are `#`+lowercased+hyphenated. Verify against rendered GitHub view if unsure. |
+| "Test would fail" | Run the test: `pytest path/to/test.py::test_name` | Cite the pass in the reply. If it fails, that's not a dismissal — it's an apply. |
+| "Version / pin is wrong" | `git show origin/main:path/to/file` or `grep -nE 'pattern' file` | Resolve against the actual base state, not your reading. |
+| "Behavior would surprise" | Run the actual behavior — no need to defend a hypothesis | Usually three lines of `python` clears it up. |
+| "Action X will break CI" | Check CI history: `gh run list --branch main --workflow name --limit 5 --json conclusion` | If main shows the same check passing, the claim is specific to the PR. If main is red too, it's pre-existing infra, not a blocker. |
 
 ## Apply
 
@@ -37,6 +63,16 @@ The SHA points the reader at the fix without them having to scroll the
 diff. Keep the one-sentence description specific enough to match the
 finding: "Fixed" alone is low-value; "Fixed typo" on a structural
 refactor is misleading.
+
+**For non-obvious claims, include the verification in the reply.** The reader benefits from knowing HOW you confirmed the finding was real — especially when Copilot re-surfaces the same claim in a later round. Obvious fixes (typos, broken links in files in the diff) don't need it; anything involving API paths, version pins, function signatures, or behavior claims does.
+
+**Example (non-obvious claim):**
+
+> Fixed in `abc1234` — verified via `grep 'ENTRY_POINT_GROUP' src/clickwork/discovery.py` that the group is `clickwork.commands` (no suffix). Updated 4 docs to match.
+
+**Example (obvious claim — no verification needed):**
+
+> Fixed in `def5678` — typo in README title.
 
 ## Dismiss
 
@@ -191,20 +227,6 @@ query that gets you the thread IDs.
   answered yet. Leave it unresolved until they respond.
 - When a human reviewer is still active on the thread. Let them
   resolve it themselves; don't stomp on their conversation.
-
-## Evidence checklist
-
-What to run when dismissing each class of claim.
-
-| Claim type | Verification command | Notes |
-|---|---|---|
-| "Symbol doesn't exist" | `grep -rn 'symbol_name' src/ tests/` | Check the claim's scope — maybe it exists in a file the reviewer didn't scan. |
-| "Import would fail" | `python -c "from module import thing; print(thing)"` | Do this in a fresh venv or the project's venv, not wherever your shell landed. |
-| "Anchor / link broken" | `grep -n '^## Heading' docs/FILE.md` | GitHub anchors are `#`+lowercased+hyphenated. Verify against rendered GitHub view if unsure. |
-| "Test would fail" | Run the test: `pytest path/to/test.py::test_name` | Cite the pass in the reply. If it fails, that's not a dismissal — it's an apply. |
-| "Version / pin is wrong" | `git show origin/main:path/to/file` or `grep -nE 'pattern' file` | Resolve against the actual base state, not your reading. |
-| "Behavior would surprise" | Run the actual behavior — no need to defend a hypothesis | Usually three lines of `python` clears it up. |
-| "Action X will break CI" | Check CI history: `gh run list --branch main --workflow name --limit 5 --json conclusion` | If main shows the same check passing, the claim is specific to the PR. If main is red too, it's pre-existing infra, not a blocker. |
 
 ## Batching multiple findings into one push
 
