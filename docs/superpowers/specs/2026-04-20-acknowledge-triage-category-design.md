@@ -6,7 +6,7 @@
 
 ## Problem
 
-On a real plan-PR use of the `github-pr-review-loop` skill (clickwork PR #97, sigstore signing plan), Copilot exhibited a pattern the skill doesn't currently handle cleanly:
+On a real plan-PR use of the `github-pr-review-loop` skill (clickwork PR #97, Sigstore signing plan), Copilot exhibited a pattern the skill doesn't currently handle cleanly:
 
 - Rounds 1-2: Copilot surfaced prose-level issues (factual errors, stale references, internal inconsistencies) which the agent applied or dismissed per the existing four-way triage.
 - Round 3: after the prose had stabilised, Copilot shifted modes and started **voting on the open A/B/C design questions** embedded in the plan doc, with reasoned justifications for each pick.
@@ -119,7 +119,7 @@ The finding is a vote from Copilot on a question that's explicitly the maintaine
 
 **Example (real):**
 
-On the clickwork sigstore plan PR #97 round 3, after the prose had stabilised, Copilot returned votes on each of the plan's six open design questions (Q1-Q6) with reasoned A/B/C justifications. Each vote got:
+On the clickwork Sigstore plan PR #97 round 3, after the prose had stabilised, Copilot returned votes on each of the plan's six open design questions (Q1-Q6) with reasoned A/B/C justifications. Each vote got:
 
 > Vote recorded: option B (keyless cosign). Reasoning noted. This is a maintainer-authority decision — leaving the thread unresolved pending `@qubitrenegade`.
 
