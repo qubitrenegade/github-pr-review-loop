@@ -64,6 +64,14 @@ Add as the new first line of the section:
 
 > Every stop condition is "stop reviewing," not "ready to merge." Merging requires CI green (previous section) AND user authorization (see Merge authorization). A fired stop condition with red CI or no merge grant = permission to stop chasing review comments, nothing more.
 
+#### 5. Remove the "user says 'merge it'" bullet from the Stop conditions list
+
+The current Stop conditions list ends with:
+
+> - **The user says "merge it".** Explicit off-ramp, always valid.
+
+Remove this bullet. It conflates a merge-authorization signal with a stop-reviewing signal — exactly the conflation this spec is designed to eliminate. The content is covered in the new "Merge authorization" section under the **Standing** mode (maintainer in-session making the merge call). Leaving it in Stop conditions would contradict the new preface added in edit 4 above.
+
 ### stop-conditions.md changes
 
 #### 1. New peer section "Merge precondition: user authorization"
@@ -99,7 +107,15 @@ Replace each bullet to separate "review signal exhausted" from "merge":
 
 > - Zero new comments on the latest pass → review signal exhausted. Merge if CI green AND user authorized (standing or conditional grant); otherwise stop chasing and ping maintainer.
 
-Same pattern applied to all four bullets in that list.
+Same pattern applied to all four bullets in that list. Note: the fourth bullet ("User says merge") moves out of the stop-conditions framing — its content belongs in the Merge authorization context per the new structure. Update it to make that clear (e.g., "User says merge → merge authorization gate is satisfied; check CI green and the review loop has at least one stop signal fired before merging").
+
+#### 4. Update Contents
+
+Update the `## Contents` bullet list at the top of stop-conditions.md to reflect the new and renamed sections:
+
+- Add a new entry for "Merge precondition: user authorization" between the existing CI-precondition entry and "Primary stop: zero new findings on a Copilot pass".
+- Rename the existing "User escape hatch" entry → "User override of the review loop".
+- Remove any stale entries if the refactor above eliminates them.
 
 ### triage-patterns.md changes
 
