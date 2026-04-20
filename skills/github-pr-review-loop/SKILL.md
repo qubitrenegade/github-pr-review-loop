@@ -1,6 +1,6 @@
 ---
 name: github-pr-review-loop
-description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions. Use for a Copilot-reviewed PR that needs driving to merge, for parallel batches of related PRs, or when deciding whether a Copilot finding is real.
+description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer / acknowledge), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions. Use for a Copilot-reviewed PR that needs driving to merge, for parallel batches of related PRs, or when deciding whether a Copilot finding is real.
 ---
 
 # GitHub PR Review Loop
@@ -22,9 +22,9 @@ mutation, stop when the signal goes quiet.
 If the repo has no Copilot reviewer or the PR has no reviewer assigned,
 this skill doesn't apply — standard PR-review habits are fine.
 
-## The triage — apply, dismiss, clarify, or defer
+## The triage — apply, dismiss, clarify, defer, or acknowledge
 
-Every Copilot inline comment is a claim. Verify the claim first, then triage it into one of four dispositions: apply, dismiss, clarify, or defer. Verification is step one for *every* disposition, not just Dismiss.
+Every Copilot inline comment is a claim. Verify the claim first, then triage it into one of five dispositions: apply, dismiss, clarify, defer, or acknowledge. Verification is step one for *every* disposition, not just Dismiss.
 
 **Apply** — the finding is real. Fix it in a follow-up commit, push,
 then reply to the comment thread citing the commit SHA so the thread is
@@ -67,6 +67,12 @@ its own tests, not a drive-by patch in a PR focused on something else.
 separate PR. Same discipline: evidence that the finding is real,
 explicit link to the follow-up so it isn't forgotten.
 
+**Acknowledge** — the finding is a vote from Copilot on a question that's explicitly the maintainer's call (typical on plan/spec PRs with open design questions embedded in the doc). Record the vote, don't treat it as authoritative, and **leave the thread unresolved** pending maintainer input:
+
+> Vote recorded for option \<A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
+
+Unlike the other four dispositions, Acknowledge does not resolve the thread. That's intentional: an open design question is not done until a human answers it. This interacts with the merge gate — see "Before merging" / the complementary "zero unresolved threads" signal. Each Acknowledge thread blocks merge until the maintainer converts it into an Apply (accept the vote) or a Dismiss (overrule it).
+
 ## After replying, resolve the conversation
 
 Every review-comment thread on a PR has a "Resolve conversation"
@@ -89,6 +95,8 @@ either Applied or Dismissed the answer. For `Defer`, resolve after
 filing the follow-up issue and linking it — the current PR's thread
 is closed because its disposition is settled, even if the fix lives
 elsewhere.
+
+For `Acknowledge`, do not resolve. The thread intentionally stays open until the maintainer decides the underlying design question. Resolving early would make the PR look merge-ready when a design decision is actually still pending. Once the maintainer weighs in, convert the thread into an Apply (accept the vote, edit the plan, cite SHA) or a Dismiss (overrule the vote with the maintainer's chosen alternative), and resolve as part of that follow-up action. See [references/triage-patterns.md](references/triage-patterns.md) under "Acknowledge" for the full pattern.
 
 ## How to re-trigger review after pushing fixes
 
@@ -128,7 +136,7 @@ before your commit lands wastes a pass.
 For a single PR, the loop is this. Repeat until a stop condition fires.
 
 1. Read the latest Copilot review's inline comments.
-2. Triage each comment (apply / dismiss / clarify / defer).
+2. Triage each comment (apply / dismiss / clarify / defer / acknowledge).
 3. Commit all "apply" fixes in one push (batch them — multiple reply
    cycles per push is wasteful).
 4. **Sweep before pushing** — grep for any variable, path, or
@@ -138,7 +146,7 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
    extra round. See [references/triage-patterns.md](references/triage-patterns.md)
    under "Sweep before you push" for the pattern.
 5. Post inline replies with commit SHAs / empirical dismissals /
-   follow-up issue links. Resolve each thread after replying.
+   follow-up issue links. Resolve each thread after replying (**except Acknowledge threads, which stay unresolved pending maintainer decision — see "After replying, resolve the conversation"**).
 6. Re-request review via GraphQL mutation.
 7. Wait. Use `ScheduleWakeup` (Claude Code) or a cron / cadence —
    never busy-poll. 4-5 min is a sensible interval.
@@ -148,7 +156,7 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 
 ## Before merging: CI must be green
 
-> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, or user override), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan PR), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
 
 **A stop condition firing is not permission to merge — it's permission
 to stop chasing Copilot.** The merge gate is separate: every required
@@ -229,6 +237,7 @@ Stop when any of these fires. Don't keep chasing.
   halt. Note: this is distinct from "user says merge," which is a
   merge-authorization signal, not a stop signal (see Merge
   authorization).
+- **Copilot shifts from prose-bug finding to design-voting.** Interpret as "the prose has stabilised; the remaining work is a human decision." On plan/spec PRs, this often coincides with a round's findings being predominantly Acknowledge-class. See [references/stop-conditions.md](references/stop-conditions.md) under "Tertiary stop" for the detail.
 
 See [references/stop-conditions.md](references/stop-conditions.md) for
 the full list including failure-mode stops (reviewer is hallucinating
