@@ -76,7 +76,7 @@ Append after the existing "`Defer` is a special case of `Apply`..." paragraph (t
 Unlike the other four dispositions, Acknowledge does not resolve the thread. That's intentional: an open design question is not done until a human answers it. This interacts with the merge gate — see "Before merging" / the complementary "zero unresolved threads" signal. Each Acknowledge thread blocks merge until the maintainer converts it into an Apply (accept the vote) or a Dismiss (overrule it).
 ```
 
-Note on the `@\<maintainer>` rendering: the template uses a plain `@` (not inside backticks) so that when someone copy-pastes and substitutes a real username, GitHub fires the mention notification. The backslash before `<maintainer>` is a Markdown escape to render the angle brackets literally without GitHub trying to parse them as HTML. In an actual PR reply you would write `@qubitrenegade` with no backticks and no backslash.
+Note on the `@\<maintainer>` rendering: the template uses a plain `@` (not inside backticks) so that when someone copy-pastes and substitutes a real username, GitHub fires the mention notification. The backslash before `<maintainer>` is a Markdown escape to render the angle brackets literally without GitHub trying to parse them as HTML. In an actual PR reply, the mention is written as plain `@username` text — no backticks, no backslash — so the notification fires. (The backticks wrapping `@username` in *this* sentence are only there to avoid this spec doc pinging anyone every time it renders; in the PR reply itself, no backticks.)
 
 #### 4. Update "After replying, resolve the conversation" section
 
