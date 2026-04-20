@@ -1,7 +1,7 @@
 # Triage patterns — apply, dismiss, clarify, defer
 
 Templates and examples for each triage category, plus the evidence
-checklist for dismissals and the discipline around resolving threads.
+checklist for verifying any finding and the discipline around resolving threads.
 
 ## Contents
 
@@ -28,7 +28,7 @@ Applying without verifying is the more subtle trap than dismissing without verif
 
 ## Evidence checklist
 
-What to run when dismissing each class of claim.
+What to run to verify each class of claim. The same commands work whether you end up applying the fix, dismissing the finding, or deferring — verification comes first, disposition second.
 
 | Claim type | Verification command | Notes |
 |---|---|---|
