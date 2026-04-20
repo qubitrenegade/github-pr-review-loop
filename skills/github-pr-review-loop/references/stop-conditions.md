@@ -227,10 +227,12 @@ PR has been explicitly closed (fixed, dismissed with evidence,
 deferred with issue, or clarified + acted on). Humans skimming the
 PR can trust that nothing slipped.
 
+**Acknowledge threads count as unresolved, intentionally.** On plan or spec PRs with open design questions, Acknowledge threads (where Copilot voted on a maintainer-authority decision — see [triage-patterns.md](triage-patterns.md) under "Acknowledge") stay unresolved until the maintainer decides. These are not "forgotten to resolve" — they are actively signaling "a design question is still open." The merge gate treats them the same as any other unresolved thread, which is the forcing function: the PR doesn't merge until the design is locked. If the unresolved count is N and all N are Acknowledge threads, the gate is correctly blocking — the remedy is maintainer decisions, not clicking Resolve.
+
 If this count is >0 but the "new findings" count is 0, you have
 open threads you didn't resolve. Either resolve them now (if they
 were addressed and you just forgot) or go back and act on them
-(if they're actually pending).
+(if they're actually pending). **Exception:** Acknowledge threads on plan or spec PRs are pending maintainer decision, not forgotten — see the note above.
 
 ## Secondary stop: Copilot repeats itself
 
@@ -262,9 +264,11 @@ Graph the count over rounds. If the curve flattens into the noise
 floor (0-1 low-value comments per round), stop.
 
 This is different from "ignore round-4+ comments". Every comment still
-gets triaged (apply / dismiss / clarify / defer). The stop decision is about
+gets triaged (apply / dismiss / clarify / defer / acknowledge). The stop decision is about
 whether to wait for another round, not whether to process comments
 already on the PR.
+
+**Mode-shift sub-signal.** On plan or spec PRs, "volume drying up" often has a characteristic shape: the first few rounds surface prose-level issues (factual errors, stale references, internal inconsistencies) which get applied or dismissed normally. Once the prose stabilises, Copilot shifts modes and starts voting on the open design questions embedded in the doc — the round is no longer surfacing bugs, it's surfacing Acknowledge-class findings (see [triage-patterns.md](triage-patterns.md) under "Acknowledge"). That mode shift is itself a stop signal: the doc is substantively clean; the remaining work is the maintainer's decision, not another Copilot round. When a round's findings are predominantly Acknowledge, the review loop has done what it can, and what unblocks progress next is maintainer time, not another re-request.
 
 ## User override of the review loop
 
@@ -328,7 +332,7 @@ me, and have I acted on it?"
 
 - Zero new comments on the latest pass → review signal exhausted. Merge if CI green AND user authorized (standing or conditional grant); otherwise stop chasing and ping maintainer.
 - New comments are repeats of addressed threads → review signal exhausted (action was the earlier fix). Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer.
-- Volume trending to zero, and each remaining comment has been triaged under the usual apply/dismiss/clarify/defer → review signal exhausted. Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer. Triage the nits the same way as any other finding; don't skip them because they're small.
+- Volume trending to zero, and each remaining comment has been triaged under the usual apply/dismiss/clarify/defer/acknowledge → review signal exhausted. Merge if CI green AND user authorized; otherwise stop chasing and ping maintainer. Triage the nits the same way as any other finding; don't skip them because they're small.
 - User says merge → merge authorization gate is satisfied (Standing mode). Verify CI green and that the review loop has at least one stop signal fired before merging — "merge authorization" alone doesn't skip the other two gates.
 
 If none of those fire and the reviewer is still producing signal, run

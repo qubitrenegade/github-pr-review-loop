@@ -1,4 +1,4 @@
-# Triage patterns — apply, dismiss, clarify, defer
+# Triage patterns — apply, dismiss, clarify, defer, acknowledge
 
 Templates and examples for each triage category, plus the evidence
 checklist for verifying any finding and the discipline around resolving threads.
@@ -11,6 +11,7 @@ checklist for verifying any finding and the discipline around resolving threads.
 - Dismiss — reply with empirical evidence
 - Clarify — ask before guessing
 - Defer — out-of-scope but valid, file a follow-up issue
+- Acknowledge — record reviewer vote on maintainer-authority decisions, leave thread unresolved
 - Resolve the thread after replying
 - Batching multiple findings into one push
 - Special cases
@@ -23,8 +24,11 @@ Every Copilot finding is a *claim*. The discipline is the same regardless of dis
 - Claim wrong → **Dismiss** with that evidence.
 - Can't tell → **Clarify**.
 - Correct but out-of-scope → **Defer** with follow-up issue.
+- Not about claim truth at all — Copilot is voting on a maintainer-authority decision → **Acknowledge** (leave the thread unresolved pending maintainer decision; this is a different axis from the four above — see the Acknowledge section below).
 
 Applying without verifying is the more subtle trap than dismissing without verifying — Copilot confidently misremembers APIs, endpoints, and version strings, so a blindly-applied "just do what the reviewer said" can make the PR worse in a new way. See the Evidence Checklist (below) for commands to run per claim type.
+
+Four of these dispositions (apply / dismiss / clarify / defer) sort findings by whether the claim is true, false, ambiguous, or out-of-scope. **Acknowledge is on a different axis**: it handles findings where the reviewer is voting on a question that isn't theirs to decide. Plan and spec PRs with open design questions are where this shows up — Copilot reads the question, offers an A/B/C vote with reasoning, and that vote is neither bug-fixable nor wrong, but also not authoritative. See the Acknowledge section below for the full pattern.
 
 ## Evidence checklist
 
@@ -179,6 +183,41 @@ issue capturing the problem, link it in the reply, move on.
 Without the issue, `Defer` is indistinguishable from "ignored it".
 Filing the issue is what makes the disposition accountable.
 
+## Acknowledge
+
+The finding is a vote from Copilot on a question that's explicitly the maintainer's call — typically on plan or spec PRs with open design questions (A/B/C choice questions) embedded in the doc. Record the vote; don't treat it as authoritative; leave the thread unresolved until the maintainer weighs in.
+
+**Template:**
+
+> Vote recorded for option \<A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
+
+The `@` is plain (not inside backticks) so GitHub fires a mention notification when the template is used in an actual PR reply with a real username. The backslash escapes the angle brackets so the placeholder renders literally in this doc.
+
+**Example (real):**
+
+On the clickwork Sigstore plan PR #97 round 3, after the prose had stabilised, Copilot returned votes on each of the plan's six open design questions (Q1-Q6) with reasoned A/B/C justifications. Each vote got:
+
+> Vote recorded: option B (keyless cosign). Reasoning noted. This is a maintainer-authority decision — leaving the thread unresolved pending `@qubitrenegade`.
+
+(Backticks around `@qubitrenegade` are intentional *in this reference doc* so it stays a literal example rather than a live mention, and to avoid accidental pings if the snippet is copy-pasted into a real issue or PR. In an actual PR reply you write the mention in plain text — no backticks — so the maintainer gets pinged.)
+
+Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan/spec doc to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
+
+**When NOT to use Acknowledge:**
+
+- The finding is a bug claim, not a vote. Those are apply/dismiss.
+- The question has an objectively correct answer that verification can establish. Those are apply/dismiss.
+- The decision is a preference *you* can reasonably make. Don't punt implementation choices to the maintainer via Acknowledge.
+- The PR isn't a plan/spec PR. Design decisions rarely live in implementation PRs; if Copilot is voting on one there, the PR probably should have been preceded by a plan or spec PR. Flag to the maintainer rather than accumulating Acknowledge threads.
+
+**Why the thread stays unresolved:**
+
+An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan/spec doc to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
+
+**The mode-shift signal:**
+
+When a Copilot round's findings are predominantly Acknowledge-class, that's a stop signal on its own (see stop-conditions.md under "Tertiary stop"). It means the prose has stabilised and the remaining work is the human decision — the review loop has done what it can; maintainer time is the next bottleneck, not another Copilot round.
+
 ## Resolve the thread after replying
 
 Every Copilot inline comment is a "review thread" with its own
@@ -228,6 +267,8 @@ query that gets you the thread IDs.
 - When a human reviewer is still active on the thread. Let them
   resolve it themselves; don't stomp on their conversation.
 
+**Acknowledge is the sustained exception.** Unlike the other four dispositions, Acknowledge threads intentionally stay unresolved until the maintainer decides the underlying question. Resolving an Acknowledge thread early defeats the "open design question" signal — it makes the PR look merge-ready when a design decision is actually still pending. Only resolve once the maintainer has weighed in and you've converted the thread into an Apply (decision accepted → plan edited) or Dismiss (decision overruled).
+
 ## Batching multiple findings into one push
 
 If a round raises N findings, process all of them before pushing. One
@@ -235,7 +276,7 @@ combined commit (or one logical commit per category) keeps the review
 thread coherent:
 
 - Read all inline comments in one pass.
-- Write triage decisions next to each (apply / dismiss / clarify / defer).
+- Write triage decisions next to each (apply / dismiss / clarify / defer / acknowledge).
 - Apply all the "apply" fixes, group by theme if sensible.
 - Commit once (or with semantic boundaries: fix, docs, style).
 - **Sweep before you push** (see below).
