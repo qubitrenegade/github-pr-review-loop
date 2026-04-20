@@ -10,7 +10,7 @@ Two related framing gaps in the `github-pr-review-loop` skill, both caught durin
 
 1. **Merge-gate conflation (#5).** The skill's "stop conditions" list can read as "stop = merge." In practice this almost caused a merge on red CI twice. The current doc already names CI-green as a separate gate, but the three gates that must all clear (Copilot-clean, CI-green, user-authorized) aren't structurally first-class. User-authorization specifically isn't called out as its own gate — the `User escape hatch` section conflates "user says stop" with "user says merge" and doesn't document the common real pattern of a *conditional merge grant* (e.g., "merge on clean + green; wait on repeats/questions before stepping away").
 
-2. **Verification-asymmetry (#3).** The skill puts the verification burden on Dismiss (lead with evidence) and treats Apply as near-reflex (fix, commit, cite SHA). But Copilot confidently misremembers APIs, endpoints, and version strings — applying a plausible-sounding suggestion verbatim can break the PR in a new way. The more subtle trap is an apply-able suggestion that's also wrong.
+2. **Verification-asymmetry (#3).** The skill puts the verification burden on Dismiss (lead with evidence) and treats Apply as near-reflex (fix, commit, cite SHA). But Copilot confidently misremembers APIs, endpoints, and version strings — applying a plausible-sounding suggestion verbatim can break the PR in a new way. The more subtle trap is a suggestion that looks safe to apply but is also wrong.
 
 ## Design
 
@@ -28,13 +28,13 @@ No code changes. No new primitives. Existing guidance is preserved and re-parent
 
 ### SKILL.md changes
 
-#### 1. Triage lead sentence (replaces current line 27)
+#### 1. Triage lead sentence (under the "The triage — apply, dismiss, clarify, or defer" heading)
 
-Current:
+Replace the opener sentence:
 
 > Every Copilot inline comment is one of four things. Decide explicitly; don't guess.
 
-New:
+With:
 
 > Every Copilot inline comment is a claim. Verify the claim first, then triage it into one of four dispositions: apply, dismiss, clarify, or defer. Verification is step one for *every* disposition, not just Dismiss.
 
@@ -42,7 +42,7 @@ New:
 
 Add a brief opener re-framing the section as one of three gates:
 
-> Merging requires three gates to clear: a clean Copilot pass (see Stop conditions), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, or user override), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
 
 Existing CI body stays as-is.
 
@@ -50,38 +50,38 @@ Existing CI body stays as-is.
 
 ~150 words covering:
 
-- User authorization is the third merge gate, peer to Copilot-clean and CI-green. Neither of the other two alone implies permission to merge.
+- User authorization is one of three merge gates, peer to the Copilot-review and CI gates. None of the three alone implies permission to merge.
 - Two modes:
   - **Standing** — the maintainer is in the session and makes the merge call themselves.
   - **Conditional grant** — the maintainer grants permission up-front with scoped caveats, typically before stepping away. Example template:
     > "Merge when Copilot returns zero new comments AND CI is green. Wait for me if there are repeated comments, comments you have questions about, or red CI."
 - Any triggered caveat revokes the grant. If the grant says "wait on repeats," a repeat means wait, not "probably fine."
-- Absent an explicit grant, the default is ping + wait. Copilot-clean + CI-green alone = permission to stop chasing, not permission to merge.
+- Absent an explicit grant, the default is ping + wait. A converged review loop + green CI alone = permission to stop chasing, not permission to merge.
 
-#### 4. Stop conditions preface (inserted at current line 199)
+#### 4. Stop conditions preface (inserted immediately under the "Stop conditions" heading)
 
-Add immediately under the "Stop conditions" heading:
+Add as the new first line of the section:
 
-> Every stop condition is "stop reviewing," not "ready to merge." Merging requires CI green (previous section) AND user authorization (see Merge authorization). A clean Copilot round with red CI or no merge grant = permission to stop chasing review comments, nothing more.
+> Every stop condition is "stop reviewing," not "ready to merge." Merging requires CI green (previous section) AND user authorization (see Merge authorization). A fired stop condition with red CI or no merge grant = permission to stop chasing review comments, nothing more.
 
 ### stop-conditions.md changes
 
 #### 1. New peer section "Merge precondition: user authorization"
 
-Insert immediately after the existing "Merge precondition: required CI checks are green" section (after current line 69, before "Primary stop").
+Insert immediately after the existing "Merge precondition: required CI checks are green" section, before the "Primary stop: zero new findings" section.
 
 ~180 words covering:
 
-- User authorization is the second merge gate, peer to CI. Neither alone is sufficient.
+- User authorization is one of three merge gates, peer to the CI and Copilot-review gates. None of the three alone implies permission to merge.
 - Two modes: standing (maintainer in-session) or conditional grant (scoped up-front permission).
 - Conditional-grant template (same as SKILL.md):
   > "Merge when Copilot returns zero new comments AND CI is green. Wait for me if there are repeated comments, comments you have questions about, or red CI."
 - Any triggered caveat revokes the grant and returns to default ("wait for maintainer"). Don't reinterpret caveats.
-- Absent a grant, the default is ping + wait. Copilot-clean + CI-green alone is NOT permission to merge.
+- Absent a grant, the default is ping + wait. A converged review loop + green CI alone is NOT permission to merge.
 
-#### 2. Refocus "User escape hatch" section (current line 253)
+#### 2. Refocus "User escape hatch" section
 
-Rename → "User override of the review loop."
+Rename the existing "User escape hatch" heading → "User override of the review loop."
 
 Narrow scope to *stopping the review*, not authorizing the merge:
 
@@ -89,9 +89,9 @@ Narrow scope to *stopping the review*, not authorizing the merge:
 
 Body shrinks to match — the "merge" case has its own dedicated section above now.
 
-#### 3. Update "Putting it together" (current line 311)
+#### 3. Update "Putting it together" section
 
-Current pattern:
+Current pattern (in the bulleted list of "has the reviewer told me what it has to tell me, and have I acted on it?" cases):
 
 > - Zero new comments on the latest pass → yes and yes → merge.
 
@@ -118,11 +118,11 @@ Same pattern applied to all four bullets in that list.
 
 #### 2. Move Evidence Checklist up
 
-Currently at line 195 (buried after all four disposition sections). Move it to immediately follow "Verify first" so it's reachable before any disposition template.
+The Evidence Checklist section is currently buried after all four disposition sections (Apply, Dismiss, Clarify, Defer). Move it to immediately follow "Verify first" so it's reachable before any disposition template.
 
-#### 3. Update Apply section (line 17-40)
+#### 3. Update Apply section
 
-Add after the existing template explanation:
+Add after the existing template explanation (in the "Apply" section):
 
 > **For non-obvious claims, include the verification in the reply.** The reader benefits from knowing HOW you confirmed the finding was real — especially when Copilot re-surfaces the same claim in a later round. Obvious fixes (typos, broken links in files in the diff) don't need it; anything involving API paths, version pins, function signatures, or behavior claims does.
 >
@@ -134,9 +134,9 @@ Add after the existing template explanation:
 >
 > > Fixed in `def5678` — typo in README title.
 
-#### 4. Update Contents (line 8)
+#### 4. Update Contents
 
-Reflect new order: Verify first → Evidence Checklist → Apply → Dismiss → Clarify → Defer → Resolve → Batching → Special cases.
+Update the "## Contents" bullet list at the top of triage-patterns.md to reflect the new order: Verify first → Evidence Checklist → Apply → Dismiss → Clarify → Defer → Resolve → Batching → Special cases.
 
 ## Verification
 
