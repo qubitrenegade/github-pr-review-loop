@@ -485,7 +485,7 @@ Run:
 
 ```bash
 # triage-patterns.md's Acknowledge section references stop-conditions.md's Tertiary stop
-grep -cn "stop-conditions.md.*Tertiary stop\|stop-conditions\.md.*Acknowledge" skills/github-pr-review-loop/references/triage-patterns.md
+grep -Ecn "stop-conditions\.md.*Tertiary stop|stop-conditions\.md.*Acknowledge" skills/github-pr-review-loop/references/triage-patterns.md
 
 # stop-conditions.md's mode-shift paragraph references triage-patterns.md's Acknowledge
 grep -cn "triage-patterns.md.*Acknowledge" skills/github-pr-review-loop/references/stop-conditions.md
@@ -513,7 +513,7 @@ grep -rn "^# Triage patterns — apply, dismiss, clarify, defer$" skills/github-
 
 # New five-way forms should appear in the expected places
 echo "=== five-way comma-form (expect >=2: SKILL.md heading + SKILL.md lead):"
-grep -rn "apply, dismiss, clarify, defer, or acknowledge\|apply, dismiss, clarify, defer, acknowledge" skills/github-pr-review-loop/
+grep -Ern "apply, dismiss, clarify, defer, or acknowledge|apply, dismiss, clarify, defer, acknowledge" skills/github-pr-review-loop/
 
 echo "=== five-way slash-form (expect >=4: SKILL frontmatter, SKILL loop step 2, triage-patterns Batching, stop-conditions Tertiary):"
 grep -rn "apply / dismiss / clarify / defer / acknowledge" skills/github-pr-review-loop/

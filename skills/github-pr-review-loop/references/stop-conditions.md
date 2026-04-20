@@ -232,7 +232,7 @@ PR can trust that nothing slipped.
 If this count is >0 but the "new findings" count is 0, you have
 open threads you didn't resolve. Either resolve them now (if they
 were addressed and you just forgot) or go back and act on them
-(if they're actually pending). **Exception:** Acknowledge threads on plan PRs are pending maintainer decision, not forgotten — see the note above.
+(if they're actually pending). **Exception:** Acknowledge threads on plan or spec PRs are pending maintainer decision, not forgotten — see the note above.
 
 ## Secondary stop: Copilot repeats itself
 
