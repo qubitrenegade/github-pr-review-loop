@@ -225,10 +225,15 @@ Stop when any of these fires. Don't keep chasing.
 - **Suggestions are drying up in volume.** Round 1 had 7 findings,
   round 3 had 2, round 4 has 1 — the signal is consumed. Next pass is
   usually empty.
+- **User override — the maintainer says "stop".** Explicit review-loop
+  halt. Note: this is distinct from "user says merge," which is a
+  merge-authorization signal, not a stop signal (see Merge
+  authorization).
 
 See [references/stop-conditions.md](references/stop-conditions.md) for
 the full list including failure-mode stops (reviewer is hallucinating
-at high volume, thread has devolved, etc.).
+at high volume, thread has devolved, etc.) and the detailed "User
+override of the review loop" section.
 
 ## What to never do
 
