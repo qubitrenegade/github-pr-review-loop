@@ -36,9 +36,9 @@ No code changes. No other files touched.
 
 ### Design choices (locked in during brainstorm)
 
-- **Peer section, not subsection.** Option A (subsection under Failure-mode stops) was considered but rejected — outside-the-repo blockers have a different blast radius (account/org/DNS/vendor) from review-loop failures (Copilot hallucinating, CI red unrelated). Burying as a subsection understates the category; peer section lets it have its own full treatment (~180 words).
-- **Checklist + escalation template + heuristics.** Option C from the brainstorm — the combination gives the reader a complete recipe: (a) the 5-minute check as a numbered list, (b) concrete heuristics for recognizing the pattern, (c) a template for the "flag + file + move on" step. Mirrors how Apply/Dismiss/Defer each have templates elsewhere in the skill. Minimal-heuristic (A) is too loose; checklist-only (B) stops short of the actionable primitive.
-- **Single file.** Option C from the structure brainstorm (new file + SKILL.md pointer) was rejected as over-engineered for the content volume; the single stop-conditions.md section is the right place.
+- **Peer section, not subsection.** A subsection under `Failure-mode stops` was considered but rejected — outside-the-repo blockers have a different blast radius (account/org/DNS/vendor) from review-loop failures (Copilot hallucinating, CI red unrelated). Burying as a subsection understates the category; a peer section lets it have its own full treatment.
+- **Checklist + escalation template + heuristics.** This combination gives the reader a complete recipe: (a) the 5-minute check as a numbered list, (b) concrete heuristics for recognizing the pattern, (c) a template for the "flag + file + move on" step. Mirrors how Apply/Dismiss/Defer each have templates elsewhere in the skill. A minimal-heuristics-only version is too loose; a checklist-only version stops short of the actionable primitive.
+- **Single file.** A separate new file plus `SKILL.md` pointer was considered but rejected as over-engineered for the content volume; the single `stop-conditions.md` section is the right place.
 
 ### stop-conditions.md changes
 
@@ -70,7 +70,7 @@ Some failures look like infra-bug material — the deploy doesn't reach the publ
 
 Three commitments: capture verified evidence, name the exact external knob, file a tracking issue. The tracking issue is what keeps it from dying silently.
 
-**Concrete example** — on clickwork PR #99's docs-site deploy, the `mkdocs gh-deploy` step ran successfully and wrote to `gh-pages`; the Pages API enabled the site (returned 201). But `https://qubitrenegade.github.io/clickwork/` 301-redirected to `qubitrenegade.com/clickwork/`, which 404s. Root cause: the account owner had a verified custom domain (`qubitrenegade.com`) configured on their user-pages repo, which cascades to all project pages. Nothing in this repo could have fixed it. The fix was an account-level GitHub setting, not a code change. 15 minutes were spent iterating before the pattern surfaced; the 5-minute check would have caught it at step 3.
+**Concrete example** — on clickwork PR #99's docs-site deploy, the `mkdocs gh-deploy` step ran successfully and wrote to `gh-pages`; the Pages API enabled the site (returned 201). But `https://qubitrenegade.github.io/clickwork/` 301-redirected to `http://qubitrenegade.com/clickwork/`, which 404s. Root cause: the account owner had a verified custom domain (`qubitrenegade.com`) configured on their user-pages repo, which cascades to all project pages. Nothing in this repo could have fixed it. The fix was an account-level GitHub setting, not a code change. 15 minutes were spent iterating before the pattern surfaced; the 5-minute check would have caught it at step 3.
 ```
 
 #### 2. Append cross-reference pointer to `## Failure-mode stops`
