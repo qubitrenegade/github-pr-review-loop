@@ -93,9 +93,9 @@ Rename the existing "User escape hatch" heading → "User override of the review
 
 Narrow scope to *stopping the review*, not authorizing the merge:
 
-> If the maintainer says "stop" or "merge it" in-session, that overrides every other review-loop signal. Don't re-litigate. (For merge permission when the maintainer isn't in-session, see "Merge precondition: user authorization" above.)
+> If the maintainer says "stop" in-session, that overrides every other review-loop signal for continuing the review. Don't re-litigate. If the maintainer says "merge it," treat that under "Merge precondition: user authorization" above rather than in this override section.
 
-Body shrinks to match — the "merge" case has its own dedicated section above now.
+Body shrinks to match — this section is only about stopping the review; the "merge it" case has its own dedicated section above.
 
 #### 3. Update "Putting it together" section
 
