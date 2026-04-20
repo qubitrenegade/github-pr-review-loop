@@ -4,7 +4,7 @@
 
 **Goal:** Apply the docs edits from spec `docs/superpowers/specs/2026-04-19-three-merge-gates-and-verify-first-design.md` to three skill files so the three merge gates (Copilot-review-loop-converged + CI-green + user-authorized) are each first-class in the reader's mental model, and so verification is step one on every triage disposition (not just Dismiss).
 
-**Architecture:** Docs-only PR. No code changes. Three files get edits that re-parent existing guidance under clearer section headings, plus limited net-new content (conditional merge grant pattern, verify-first framing on Apply). Each file is edited independently in its own task; a final verification task cross-checks the three files for consistency.
+**Architecture:** Docs-only PR. No code changes. Three *skill* files get edits that re-parent existing guidance under clearer section headings, plus limited net-new content (conditional merge grant pattern, verify-first framing on Apply). Each skill file is edited independently in its own task; a final verification task cross-checks the three for consistency. This plan document itself ships alongside the skill edits as the fourth file in the PR — it's the audit trail for what changed and why, not part of the framing edits.
 
 **Tech Stack:** Plain Markdown. Git. `gh` CLI.
 
