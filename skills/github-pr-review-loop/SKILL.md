@@ -156,7 +156,7 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 
 ## Before merging: CI must be green
 
-> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan PR), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan/spec PR), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
 
 **A stop condition firing is not permission to merge — it's permission
 to stop chasing Copilot.** The merge gate is separate: every required

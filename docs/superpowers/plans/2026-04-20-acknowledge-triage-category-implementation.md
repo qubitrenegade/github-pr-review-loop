@@ -159,7 +159,7 @@ Per spec SKILL.md change #8. The three-gate opener at the top of `## Before merg
 
 Replace the enumeration portion. The full updated blockquote should read:
 
-> > Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan PR), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
+> > Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan/spec PR), green CI (below), and user authorization (see Merge authorization). This section covers the CI gate; the other two have their own sections.
 
 - [ ] **Step 10: Verify edits landed**
 
@@ -285,7 +285,7 @@ Threads stayed open until the maintainer reviewed each vote and either accepted 
 
 **Why the thread stays unresolved:**
 
-An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan PR with open votes is a plan that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
+An open design question is not done until a human answers it. The "zero unresolved threads" merge signal (see stop-conditions.md) treats Acknowledge threads as blocking on purpose — a plan or spec PR with open votes is one that hasn't locked its design yet, and merging it is premature. When the maintainer decides, they (or you, on their behalf) either edit the plan to reflect the choice and convert the thread to an Apply-with-SHA, or reply with the counter-decision and convert the thread to a Dismiss. Either way, the thread resolves as part of making the decision, not independent of it.
 
 **The mode-shift signal:**
 
@@ -398,7 +398,7 @@ Expected: all 6 greps return exactly one matching line.
 Per spec stop-conditions.md change #1. Find the existing paragraph in `## Complement: zero unresolved conversation threads` that ends with "Humans skimming the PR can trust that nothing slipped." Immediately after that paragraph (before the "If this count is >0..." paragraph that follows), insert a blank line and:
 
 ```markdown
-**Acknowledge threads count as unresolved, intentionally.** On plan or spec PRs with open design questions, Acknowledge threads (where Copilot voted on a maintainer-authority decision — see [triage-patterns.md](triage-patterns.md) under "Acknowledge") stay unresolved until the maintainer decides. These are not "forgotten to resolve" — they are actively signaling "a design question is still open." The merge gate treats them the same as any other unresolved thread, which is the forcing function: the plan doesn't merge until the design is locked. If the unresolved count is N and all N are Acknowledge threads, the gate is correctly blocking — the remedy is maintainer decisions, not clicking Resolve.
+**Acknowledge threads count as unresolved, intentionally.** On plan or spec PRs with open design questions, Acknowledge threads (where Copilot voted on a maintainer-authority decision — see [triage-patterns.md](triage-patterns.md) under "Acknowledge") stay unresolved until the maintainer decides. These are not "forgotten to resolve" — they are actively signaling "a design question is still open." The merge gate treats them the same as any other unresolved thread, which is the forcing function: the PR doesn't merge until the design is locked. If the unresolved count is N and all N are Acknowledge threads, the gate is correctly blocking — the remedy is maintainer decisions, not clicking Resolve.
 ```
 
 - [ ] **Step 3: Edit #1b — append Acknowledge-exception sentence to the "If this count is >0..." paragraph**
@@ -406,7 +406,7 @@ Per spec stop-conditions.md change #1. Find the existing paragraph in `## Comple
 Per spec stop-conditions.md change #1 (second part). Find the existing paragraph that starts "If this count is >0..." — it currently ends somewhere around "...Either resolve them now (if they were addressed and you just forgot) or go back and act on them (if they're actually pending)." At the end of that paragraph, append this sentence:
 
 ```
-**Exception:** Acknowledge threads on plan PRs are pending maintainer decision, not forgotten — see the note above.
+**Exception:** Acknowledge threads on plan or spec PRs are pending maintainer decision, not forgotten — see the note above.
 ```
 
 The sentence joins the existing paragraph (no blank line before it). Use the Edit tool with the existing paragraph's last sentence as `old_string` and `<existing last sentence> <new sentence>` as `new_string`.
@@ -435,7 +435,7 @@ Run:
 
 ```bash
 grep -n "\*\*Acknowledge threads count as unresolved, intentionally\.\*\*" skills/github-pr-review-loop/references/stop-conditions.md
-grep -n "\*\*Exception:\*\* Acknowledge threads on plan PRs" skills/github-pr-review-loop/references/stop-conditions.md
+grep -n "\*\*Exception:\*\* Acknowledge threads on plan or spec PRs" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "apply / dismiss / clarify / defer / acknowledge" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "\*\*Mode-shift sub-signal\.\*\*" skills/github-pr-review-loop/references/stop-conditions.md
 grep -cn "apply / dismiss / clarify / defer)" skills/github-pr-review-loop/references/stop-conditions.md
