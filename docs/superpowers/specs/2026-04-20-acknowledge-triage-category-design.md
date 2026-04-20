@@ -29,8 +29,8 @@ There's a companion observation worth documenting too: **Copilot tends to shift 
 Bundled docs PR touching three files:
 
 - `skills/github-pr-review-loop/SKILL.md` — triage section becomes five-way (frontmatter `description`, heading, lead sentence, body bullet for Acknowledge); "After replying, resolve the conversation" section gets Acknowledge-exception paragraph; "The loop" steps 2 and 5 updated for five-way triage and Acknowledge's stay-unresolved behavior; Stop conditions list gains the mode-shift bullet; "Before merging" opener's stop-condition enumeration updated to include the mode-shift signal.
-- `skills/github-pr-review-loop/references/triage-patterns.md` — title line updated; Contents TOC updated; new `## Acknowledge` section with template and real example; "Verify first" mapping updated to add Acknowledge on a separate (authority-based, not truth-based) axis; "Resolve the thread after replying" section gets Acknowledge-is-sustained-exception note.
-- `skills/github-pr-review-loop/references/stop-conditions.md` — expand "Complement: zero unresolved conversation threads" to explicitly note Acknowledge threads count as unresolved (by design), and expand "Tertiary stop: volume drying up" with the mode-shift sub-signal.
+- `skills/github-pr-review-loop/references/triage-patterns.md` — title line updated; Contents TOC updated; new `## Acknowledge` section with template and real example; "Verify first" mapping updated to add Acknowledge on a separate (authority-based, not truth-based) axis; "Resolve the thread after replying" section gets Acknowledge-is-sustained-exception note; "Batching multiple findings into one push" section's slash-form triage enumeration updated to five-way.
+- `skills/github-pr-review-loop/references/stop-conditions.md` — expand "Complement: zero unresolved conversation threads" to explicitly note Acknowledge threads count as unresolved (by design); expand "Tertiary stop: volume drying up" with (a) the mode-shift sub-signal and (b) updated slash-form triage enumeration to five-way.
 
 No code changes. No new primitives.
 
@@ -214,6 +214,16 @@ After the existing `**When NOT to resolve:**` bullet list (the one that ends wit
 **Acknowledge is the sustained exception.** Unlike the other four dispositions, Acknowledge threads intentionally stay unresolved until the maintainer decides the underlying question. Resolving an Acknowledge thread early defeats the "open design question" signal — it makes the PR look merge-ready when a design decision is actually still pending. Only resolve once the maintainer has weighed in and you've converted the thread into an Apply (decision accepted → plan edited) or Dismiss (decision overruled).
 ```
 
+#### 6. Update "Batching multiple findings into one push" section
+
+The Batching section has a bullet that enumerates the four triage categories in slash-form. Current text:
+
+> - Write triage decisions next to each (apply / dismiss / clarify / defer).
+
+Update to include `acknowledge`:
+
+> - Write triage decisions next to each (apply / dismiss / clarify / defer / acknowledge).
+
 ### stop-conditions.md changes
 
 #### 1. Expand "Complement: zero unresolved conversation threads" section
@@ -232,7 +242,17 @@ Also update the existing "If this count is >0..." paragraph (which currently say
 
 #### 2. Expand "Tertiary stop: volume drying up" section
 
-Append a new paragraph after the existing `This is different from "ignore round-4+ comments"...` paragraph (the last paragraph of the section before `## User override of the review loop`):
+Two edits inside this section.
+
+**2a.** Update the existing text that enumerates the four triage categories in slash-form. Current text (in the paragraph that starts "This is different from..."):
+
+> This is different from "ignore round-4+ comments". Every comment still gets triaged (apply / dismiss / clarify / defer). The stop decision is about whether to wait for another round, not whether to process comments already on the PR.
+
+Update the enumeration to include `acknowledge`:
+
+> This is different from "ignore round-4+ comments". Every comment still gets triaged (apply / dismiss / clarify / defer / acknowledge). The stop decision is about whether to wait for another round, not whether to process comments already on the PR.
+
+**2b.** Append a new paragraph after the existing `This is different from "ignore round-4+ comments"...` paragraph (now with the updated enumeration), before `## User override of the review loop`:
 
 ```markdown
 **Mode-shift sub-signal.** On plan or spec PRs, "volume drying up" often has a characteristic shape: the first few rounds surface prose-level issues (factual errors, stale references, internal inconsistencies) which get applied or dismissed normally. Once the prose stabilises, Copilot shifts modes and starts voting on the open design questions embedded in the doc — the round is no longer surfacing bugs, it's surfacing Acknowledge-class findings (see [triage-patterns.md](triage-patterns.md) under "Acknowledge"). That mode shift is itself a stop signal: the plan doc is substantively clean; the remaining work is the maintainer's decision, not another Copilot round. When a round's findings are predominantly Acknowledge, the review loop has done what it can, and what unblocks progress next is maintainer time, not another re-request.
@@ -244,7 +264,7 @@ Docs-only PR; "testing" means:
 
 1. **Read-through check** — read all three files top-to-bottom after edits. Confirm the five-way triage framing is consistent across SKILL.md (heading + lead sentence + body) and triage-patterns.md (title + Contents + body). Confirm Acknowledge's "stay unresolved" behavior is described consistently in both triage-patterns.md (the Acknowledge section itself + the Resolve-the-thread exception) and stop-conditions.md (the Complement-zero-unresolved note).
 2. **Cross-reference link check** — triage-patterns.md's Acknowledge section references stop-conditions.md; stop-conditions.md's mode-shift paragraph references triage-patterns.md. Both directions resolve to existing (or newly-added) section headings.
-3. **Grep sweep** — search for `apply, dismiss, clarify, or defer` (the old four-way enumeration) across the three files; should appear 0 times after edits. Confirm `apply, dismiss, clarify, defer, or acknowledge` (or variants like `apply, dismiss, clarify, defer, acknowledge` in the triage-patterns.md title) appears in the expected places.
+3. **Grep sweep** — search across the three files for **all** old four-way enumerations in both comma-form and slash-form: `apply, dismiss, clarify, or defer` and `apply / dismiss / clarify / defer`. Both should appear 0 times after edits. Confirm the five-way equivalents (`apply, dismiss, clarify, defer, or acknowledge` and `apply / dismiss / clarify / defer / acknowledge`, plus the triage-patterns.md title's `apply, dismiss, clarify, defer, acknowledge`) appear in the expected places. The slash-form currently appears in four locations pre-edit: SKILL.md frontmatter `description:` (covered by edit #6), SKILL.md `The loop` step 2 (covered by edit #7), triage-patterns.md's Batching section, and stop-conditions.md's Tertiary stop body — the last two need the dedicated edits listed below.
 4. **Copilot review loop** — run the normal drill per the skill itself. Dogfood the skill (including — recursively — the new Acknowledge category) on the PR.
 
 No automated tests. No code changes.
