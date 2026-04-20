@@ -18,7 +18,7 @@ Those votes don't fit cleanly into apply / dismiss / clarify / defer:
 - Not ambiguous to "clarify" (nothing is unclear — it's a design choice).
 - Not out-of-scope to "defer" (it's entirely in-scope for a plan PR; a human decision is how the question gets resolved).
 
-In the live use the agent handled this by posting "acknowledged, flagging to @maintainer" replies per thread and leaving each unresolved, but that pattern wasn't written down anywhere. This spec adds it explicitly.
+In the live use the agent handled this by posting "acknowledged, flagging to `@<maintainer>`" replies per thread and leaving each unresolved, but that pattern wasn't written down anywhere. This spec adds it explicitly.
 
 There's a companion observation worth documenting too: **Copilot tends to shift from prose-bug finding to design-voting when the prose stabilises.** That mode shift is itself a useful stop-loop signal — the plan doc is substantively clean; the remaining work is the maintainer's call, not another Copilot round.
 
@@ -71,7 +71,7 @@ Append after the existing "`Defer` is a special case of `Apply`..." paragraph (t
 ```markdown
 **Acknowledge** — the finding is a vote from Copilot on a question that's explicitly the maintainer's call (typical on plan/spec PRs with open design questions embedded in the doc). Record the vote, don't treat it as authoritative, and **leave the thread unresolved** pending maintainer input:
 
-> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
+> Vote recorded for option \<A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
 
 Unlike the other four dispositions, Acknowledge does not resolve the thread. That's intentional: an open design question is not done until a human answers it. This interacts with the merge gate — see "Before merging" / the complementary "zero unresolved threads" signal. Each Acknowledge thread blocks merge until the maintainer converts it into an Apply (accept the vote) or a Dismiss (overrule it).
 ```
@@ -160,7 +160,7 @@ The finding is a vote from Copilot on a question that's explicitly the maintaine
 
 **Template:**
 
-> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
+> Vote recorded for option \<A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
 
 The `@` is plain (not inside backticks) so GitHub fires a mention notification when the template is used in an actual PR reply with a real username. The backslash escapes the angle brackets so the placeholder renders literally in this doc.
 
