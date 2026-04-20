@@ -159,7 +159,7 @@ Update the "## Contents" bullet list at the top of triage-patterns.md to reflect
 Docs-only PR; "testing" means:
 
 1. **Read-through check** — after edits, re-read each file top-to-bottom to confirm the three-gate framing is consistent across all three files. No section contradicts another.
-2. **Link check** — cross-references between sections (e.g., SKILL.md's "see Merge authorization" pointing at stop-conditions.md's new section) actually resolve.
+2. **Link check** — cross-references between sections resolve to the right place. Notably: SKILL.md's "see Merge authorization" points at SKILL.md's *own* new Merge authorization section (same file), and any cross-links between SKILL.md and stop-conditions.md's user-authorization treatments (both files now cover the gate) point at each other's intended sections.
 3. **Grep sweep** — search for old *conflation* phrases specifically (e.g., `yes and yes → merge`, direct `stop → merge` equations, `permission to merge` used where the correct meaning is "permission to stop chasing") across the three files. `stop condition` itself is a valid term that stays, so don't grep for it — it will always hit and isn't useful signal.
 4. **Copilot review loop** — run the normal drill per the skill itself. Dogfood it on the PR.
 
