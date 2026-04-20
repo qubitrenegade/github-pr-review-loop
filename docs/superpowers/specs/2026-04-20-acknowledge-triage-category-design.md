@@ -71,12 +71,24 @@ Append after the existing "`Defer` is a special case of `Apply`..." paragraph (t
 ```markdown
 **Acknowledge** — the finding is a vote from Copilot on a question that's explicitly the maintainer's call (typical on plan/spec PRs with open design questions embedded in the doc). Record the vote, don't treat it as authoritative, and **leave the thread unresolved** pending maintainer input:
 
-> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending `@<maintainer>`.
+> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
 
 Unlike the other four dispositions, Acknowledge does not resolve the thread. That's intentional: an open design question is not done until a human answers it. This interacts with the merge gate — see "Before merging" / the complementary "zero unresolved threads" signal. Each Acknowledge thread blocks merge until the maintainer converts it into an Apply (accept the vote) or a Dismiss (overrule it).
 ```
 
-#### 4. Add mode-shift bullet to the Stop conditions list
+Note on the `@\<maintainer>` rendering: the template uses a plain `@` (not inside backticks) so that when someone copy-pastes and substitutes a real username, GitHub fires the mention notification. The backslash before `<maintainer>` is a Markdown escape to render the angle brackets literally without GitHub trying to parse them as HTML. In an actual PR reply you would write `@qubitrenegade` with no backticks and no backslash.
+
+#### 4. Update "After replying, resolve the conversation" section
+
+SKILL.md currently has a section titled `## After replying, resolve the conversation` (at line 70+ in the current file) that prescribes resolving every thread after replying, with a final paragraph covering the Clarify and Defer timing. Without an Acknowledge-exception note here, SKILL.md becomes self-contradictory after the implementation PR: the triage body says Acknowledge stays unresolved, but the Resolve section says resolve everything.
+
+Append a new paragraph after the existing final paragraph (the one that ends with "the current PR's thread is closed because its disposition is settled, even if the fix lives elsewhere."):
+
+```markdown
+For `Acknowledge`, do not resolve. The thread intentionally stays open until the maintainer decides the underlying design question. Resolving early would make the PR look merge-ready when a design decision is actually still pending. Once the maintainer weighs in, convert the thread into an Apply (accept the vote, edit the plan, cite SHA) or a Dismiss (overrule the vote with the maintainer's chosen alternative), and resolve as part of that follow-up action. See [references/triage-patterns.md](references/triage-patterns.md) under "Acknowledge" for the full pattern.
+```
+
+#### 5. Add mode-shift bullet to the Stop conditions list
 
 Currently the Stop conditions list has four bullets (zero new, repeats, volume drying, user override). Add a fifth:
 
@@ -115,13 +127,17 @@ The finding is a vote from Copilot on a question that's explicitly the maintaine
 
 **Template:**
 
-> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending `@<maintainer>`.
+> Vote recorded for option <A/B/C> — this is a maintainer-authority decision; leaving the thread unresolved pending @\<maintainer>.
+
+The `@` is plain (not inside backticks) so GitHub fires a mention notification when the template is used in an actual PR reply with a real username. The backslash escapes the angle brackets so the placeholder renders literally in this doc.
 
 **Example (real):**
 
 On the clickwork Sigstore plan PR #97 round 3, after the prose had stabilised, Copilot returned votes on each of the plan's six open design questions (Q1-Q6) with reasoned A/B/C justifications. Each vote got:
 
 > Vote recorded: option B (keyless cosign). Reasoning noted. This is a maintainer-authority decision — leaving the thread unresolved pending `@qubitrenegade`.
+
+(Backticks around `@qubitrenegade` are intentional *in this reference doc* to avoid GitHub firing a mention notification every time the doc is rendered. In an actual PR reply you write the mention in plain text — no backticks — so the notification fires and the maintainer gets pinged.)
 
 Threads stayed open until the maintainer reviewed each vote and either accepted the reasoning (thread becomes an Apply — edit the plan to lock the choice) or overruled with their own pick (thread becomes a Dismiss of the vote, Apply of the maintainer's choice).
 
