@@ -28,8 +28,8 @@ There's a companion observation worth documenting too: **Copilot tends to shift 
 
 Bundled docs PR touching three files:
 
-- `skills/github-pr-review-loop/SKILL.md` — triage section becomes five-way (add Acknowledge), update lead sentence + heading, add mode-shift bullet to the Stop conditions list.
-- `skills/github-pr-review-loop/references/triage-patterns.md` — new `## Acknowledge` section with template and real example, TOC update, title-line update, Resolve-the-thread section gets an "Acknowledge is the sustained exception" note.
+- `skills/github-pr-review-loop/SKILL.md` — triage section becomes five-way (frontmatter `description`, heading, lead sentence, body bullet for Acknowledge); "After replying, resolve the conversation" section gets Acknowledge-exception paragraph; "The loop" steps 2 and 5 updated for five-way triage and Acknowledge's stay-unresolved behavior; Stop conditions list gains the mode-shift bullet; "Before merging" opener's stop-condition enumeration updated to include the mode-shift signal.
+- `skills/github-pr-review-loop/references/triage-patterns.md` — title line updated; Contents TOC updated; new `## Acknowledge` section with template and real example; "Verify first" mapping updated to add Acknowledge on a separate (authority-based, not truth-based) axis; "Resolve the thread after replying" section gets Acknowledge-is-sustained-exception note.
 - `skills/github-pr-review-loop/references/stop-conditions.md` — expand "Complement: zero unresolved conversation threads" to explicitly note Acknowledge threads count as unresolved (by design), and expand "Tertiary stop: volume drying up" with the mode-shift sub-signal.
 
 No code changes. No new primitives.
@@ -96,6 +96,39 @@ Currently the Stop conditions list has four bullets (zero new, repeats, volume d
 - **Copilot shifts from prose-bug finding to design-voting.** Interpret as "the prose has stabilised; the remaining work is a human decision." On plan/spec PRs, this often coincides with a round's findings being predominantly Acknowledge-class. See [references/stop-conditions.md](references/stop-conditions.md) under "Tertiary stop" for the detail.
 ```
 
+#### 6. Update frontmatter `description:` field
+
+The SKILL.md YAML frontmatter currently hardcodes the four-way triage in its `description:` field:
+
+> `description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions.`
+
+Update the triage enumeration to match the new five-way:
+
+> `description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer / acknowledge), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions.`
+
+Rationale: the `description` field is what appears in the skill index / plugin manifest; leaving it as four-way makes the repo's skill metadata inconsistent with the body and may lead to stale cached descriptions after the change ships.
+
+#### 7. Update "The loop" numbered steps
+
+SKILL.md's `## The loop` section has two numbered steps that need updating for the 5-way triage and Acknowledge's stay-unresolved behavior:
+
+- **Step 2** currently reads: `2. Triage each comment (apply / dismiss / clarify / defer).` Update to: `2. Triage each comment (apply / dismiss / clarify / defer / acknowledge).`
+- **Step 5** currently reads: `5. Post inline replies with commit SHAs / empirical dismissals / follow-up issue links. Resolve each thread after replying.` Update to: `5. Post inline replies with commit SHAs / empirical dismissals / follow-up issue links. Resolve each thread after replying (**except Acknowledge threads, which stay unresolved pending maintainer decision — see "After replying, resolve the conversation"**).`
+
+Without step 2's update, the skill's quick-reference loop contradicts the new triage body. Without step 5's update, the loop quick-reference prescribes "resolve each thread" even for Acknowledge, contradicting the dedicated After-replying section's Acknowledge exception.
+
+#### 8. Update "Before merging" opener's stop-condition enumeration
+
+The three-gate opener at the top of `## Before merging: CI must be green` currently enumerates the Copilot-review-loop stop conditions inline:
+
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's **zero new comments, repeats only, volume dried up, or user override**), green CI (below), and user authorization (see Merge authorization).
+
+Update the enumeration to include the new mode-shift signal:
+
+> Merging requires three gates to clear: the Copilot review loop has converged (see Stop conditions — a stop condition has fired, whether that's **zero new comments, repeats only, volume dried up, user override, or a prose-to-design-voting mode shift on a plan PR**), green CI (below), and user authorization (see Merge authorization).
+
+Rationale: the enumeration reads as exhaustive. Adding a 5th stop condition (edit #5) without updating this list makes the opener incomplete; a reader relying on the opener's enumeration would miss the new stop signal.
+
 ### triage-patterns.md changes
 
 #### 1. Update file title line
@@ -157,7 +190,23 @@ An open design question is not done until a human answers it. The "zero unresolv
 When a Copilot round's findings are predominantly Acknowledge-class, that's a stop signal on its own (see stop-conditions.md under "Tertiary stop"). It means the prose has stabilised and the remaining work is the human decision — the review loop has done what it can; maintainer time is the next bottleneck, not another Copilot round.
 ```
 
-#### 4. Update "Resolve the thread after replying" section
+#### 4. Update "Verify first" mapping
+
+The existing `## Verify first` section contains a 4-way mapping that treats every finding as a claim-truth question (correct → Apply, wrong → Dismiss, can't tell → Clarify, correct-but-out-of-scope → Defer). That model doesn't cover Acknowledge, because Acknowledge isn't about whether the claim is true or false — it's about *who has authority to decide*. A Copilot vote on a design question may be "true" or "false" in the sense that the reasoning holds up, but neither answer makes Copilot the authority.
+
+Update the section to add Acknowledge as a separate axis and clarify the distinction. Append to the existing bullet list (after the "Correct but out-of-scope → **Defer**..." bullet):
+
+```markdown
+- Not about claim truth at all — Copilot is voting on a maintainer-authority decision → **Acknowledge** (leave the thread unresolved pending maintainer decision; this is a different axis from the four above — see the Acknowledge section below).
+```
+
+And add a short paragraph after the existing "Applying without verifying is the more subtle trap..." paragraph to clarify the two-axis model:
+
+```markdown
+Four of these dispositions (apply / dismiss / clarify / defer) sort findings by whether the claim is true, false, ambiguous, or out-of-scope. **Acknowledge is on a different axis**: it handles findings where the reviewer is voting on a question that isn't theirs to decide. Plan and spec PRs with open design questions are where this shows up — Copilot reads the question, offers an A/B/C vote with reasoning, and that vote is neither bug-fixable nor wrong, but also not authoritative. See the Acknowledge section below for the full pattern.
+```
+
+#### 5. Update "Resolve the thread after replying" section
 
 After the existing `**When NOT to resolve:**` bullet list (the one that ends with "Let them resolve it themselves; don't stomp on their conversation."), append a new paragraph:
 
