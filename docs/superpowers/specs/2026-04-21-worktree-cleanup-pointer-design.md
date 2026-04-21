@@ -6,11 +6,11 @@
 
 ## Problem
 
-The `github-pr-review-loop` skill mentions using worktrees in its `## Scaling to multiple PRs` section ("One worktree per PR, branched from current main.") and in `skills/github-pr-review-loop/references/wave-orchestration.md`, but gives no guidance on their lifecycle. In practice, worktrees accumulate after `gh pr merge --delete-branch` — the remote branch gets deleted, `gh` may drop the local branch too, but the worktree directory stays until someone runs `git worktree remove <path>` (and removes the directory, which `git worktree remove` may leave behind if there are untracked files and `--force` wasn't used).
+The `github-pr-review-loop` skill mentions using worktrees in its `## Scaling to multiple PRs` section ("One worktree per PR, branched from current main.") and in `skills/github-pr-review-loop/references/wave-orchestration.md`, but gives no guidance on their lifecycle. In practice, worktrees accumulate after `gh pr merge --delete-branch` — the flag deletes both the remote branch and the local branch (the local delete may fail if the branch is checked out in a worktree or has unpushed commits) — but the worktree directory itself always stays until someone runs `git worktree remove <path>` and removes the directory (and `git worktree remove` may leave the directory behind if it contains untracked files and `--force` wasn't used).
 
 Issue #7 asked "should we consider cleaning up worktrees after we merge a branch?"
 
-The answer, after brainstorming: **this skill shouldn't own worktree lifecycle.** That's `superpowers:using-git-worktrees` (creation) and `superpowers:finishing-a-development-branch` (cleanup). Both skills already exist and prescribe the discipline. What this skill is missing is a **discoverability pointer** — a reader following the `github-pr-review-loop` flow into the Scaling section encounters "use worktrees" but no onward link to the lifecycle skills.
+The answer, after brainstorming: **this skill shouldn't own worktree lifecycle.** That's `superpowers:using-git-worktrees` (creation) and `superpowers:finishing-a-development-branch` (cleanup) — both part of the external `superpowers` plugin. Both skills already exist and prescribe the discipline. What this skill is missing is a **discoverability pointer** — a reader following the `github-pr-review-loop` flow into the Scaling section encounters "use worktrees" but no onward link to the lifecycle skills.
 
 ## Design
 
@@ -40,14 +40,15 @@ The existing `## Scaling to multiple PRs` section has a 3-bullet list describing
 Append a new 4th bullet after the existing three, before the "See [references/wave-orchestration.md]..." paragraph that follows the list:
 
 ```markdown
-- **Worktree lifecycle isn't owned by this skill.** See
-  `superpowers:using-git-worktrees` for creation (directory selection,
-  safety checks, setup) and
+- **Worktree lifecycle isn't owned by this skill.** If you have the
+  `superpowers` plugin installed, see `superpowers:using-git-worktrees`
+  for creation (directory selection, safety checks, setup) and
   `superpowers:finishing-a-development-branch` for cleanup after merge.
-  Don't let stale worktrees accumulate — `gh pr merge --delete-branch`
-  removes the remote branch but leaves the local worktree directory in
-  place until the `superpowers:finishing-a-development-branch`
-  discipline runs.
+  Without that plugin, apply the same discipline manually:
+  `git worktree add <path>` to create, `git worktree remove <path>`
+  (plus removing the directory if files remain) after merge. Don't
+  let stale worktrees accumulate — `gh pr merge --delete-branch`
+  deletes the branches but leaves the worktree directory in place.
 ```
 
 ## Verification
