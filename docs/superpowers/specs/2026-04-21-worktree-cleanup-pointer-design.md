@@ -6,7 +6,7 @@
 
 ## Problem
 
-The `github-pr-review-loop` skill mentions using worktrees in its `## Scaling to multiple PRs` section ("One worktree per PR, branched from current main.") and in `wave-orchestration.md`, but gives no guidance on their lifecycle. In practice, worktrees accumulate after `gh pr merge --delete-branch` — the remote branch gets deleted, `gh` may drop the local branch too, but the worktree directory stays until someone runs `git worktree remove <path>` and cleans up the directory.
+The `github-pr-review-loop` skill mentions using worktrees in its `## Scaling to multiple PRs` section ("One worktree per PR, branched from current main.") and in `skills/github-pr-review-loop/references/wave-orchestration.md`, but gives no guidance on their lifecycle. In practice, worktrees accumulate after `gh pr merge --delete-branch` — the remote branch gets deleted, `gh` may drop the local branch too, but the worktree directory stays until someone runs `git worktree remove <path>` (and removes the directory, which `git worktree remove` may leave behind if there are untracked files and `--force` wasn't used).
 
 Issue #7 asked "should we consider cleaning up worktrees after we merge a branch?"
 
@@ -40,7 +40,14 @@ The existing `## Scaling to multiple PRs` section has a 3-bullet list describing
 Append a new 4th bullet after the existing three, before the "See [references/wave-orchestration.md]..." paragraph that follows the list:
 
 ```markdown
-- **Worktree lifecycle isn't owned by this skill.** See `superpowers:using-git-worktrees` for creation (directory selection, safety checks, setup) and `superpowers:finishing-a-development-branch` for cleanup after merge. Don't let stale worktrees accumulate — `gh pr merge --delete-branch` removes the remote branch but leaves the local worktree directory in place until the finishing-a-development-branch discipline runs.
+- **Worktree lifecycle isn't owned by this skill.** See
+  `superpowers:using-git-worktrees` for creation (directory selection,
+  safety checks, setup) and
+  `superpowers:finishing-a-development-branch` for cleanup after merge.
+  Don't let stale worktrees accumulate — `gh pr merge --delete-branch`
+  removes the remote branch but leaves the local worktree directory in
+  place until the `superpowers:finishing-a-development-branch`
+  discipline runs.
 ```
 
 ## Verification
@@ -59,4 +66,4 @@ No automated tests. No code changes.
 
 - **#4** (reply+resolve helper script) — distinct effort, own PR.
 
-After this PR merges, #4 is the last remaining issue in the batch that motivated the #5+#3, #2, and #6 spec cycles.
+After this PR merges, #4 is the last remaining issue in the batch that motivated the earlier spec cycles for issues #5, #3, #2, and #6.
