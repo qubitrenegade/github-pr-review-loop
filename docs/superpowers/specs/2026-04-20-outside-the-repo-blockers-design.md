@@ -112,7 +112,7 @@ The resulting TOC (after this PR's edit):
 Docs-only PR; "testing" means:
 
 1. **Read-through check** — read stop-conditions.md top-to-bottom after edits. Confirm the new section reads cleanly between Failure-mode stops and Anti-patterns. Confirm the Failure-mode-stops pointer clearly directs readers to Outside-the-repo blockers.
-2. **Pointer / heading check** — confirm the reference from `## Failure-mode stops` to Outside-the-repo blockers is present and unambiguous. The pointer is prose (`see "Outside-the-repo blockers"`), not a markdown link, so matching-section-name is what makes it resolve; the new section's Contents TOC entry should match the heading text exactly.
+2. **Pointer / heading check** — confirm the reference from `## Failure-mode stops` to Outside-the-repo blockers is present and unambiguous. The pointer is prose (`see "Outside-the-repo blockers"`), not a markdown link, so this check is about wording consistency: readers should be able to find the section easily because the referenced text matches the section heading, and the new section's Contents TOC entry should match the heading text exactly.
 3. **Grep sweep** — search for the `5-minute check` keywords (should appear in the new section and nowhere else) and for `Outside-the-repo blockers` heading (should appear in both TOC and section).
 4. **Copilot review loop** — run the normal drill per the skill itself.
 
