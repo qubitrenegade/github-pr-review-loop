@@ -123,7 +123,7 @@ Run:
 grep -n "^## Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "^- Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "^See also: \"Outside-the-repo blockers\" below" skills/github-pr-review-loop/references/stop-conditions.md
-grep -n "5-minute check" skills/github-pr-review-loop/references/stop-conditions.md
+grep -n "\*\*The 5-minute check\*\*" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "Blocked: external" skills/github-pr-review-loop/references/stop-conditions.md
 grep -cn "^## Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
 ```
