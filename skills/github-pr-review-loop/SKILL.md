@@ -329,6 +329,15 @@ the orchestration around it.
   on one PR's Copilot round when the others could be progressing.
 - Overlap the next wave's prep (branch creation, agent briefing) with
   the current wave's Copilot bake time. Don't idle.
+- **Worktree lifecycle isn't owned by this skill.** If you have the
+  `superpowers` plugin installed, see `superpowers:using-git-worktrees`
+  for creation (directory selection, safety checks, setup) and
+  `superpowers:finishing-a-development-branch` for cleanup after merge.
+  Without that plugin, apply the same discipline manually:
+  `git worktree add <path>` to create, `git worktree remove <path>`
+  (plus removing the directory if files remain) after merge. Don't
+  let stale worktrees accumulate — `gh pr merge --delete-branch`
+  deletes the branches but leaves the worktree directory in place.
 
 See [references/wave-orchestration.md](references/wave-orchestration.md)
 for the parallel-waves pattern in detail.
