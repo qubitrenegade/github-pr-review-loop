@@ -40,10 +40,12 @@ No other files edited. No code. No new references added. No plugin-manifest chan
 
 #### 1. Add `allowed-tools` to frontmatter
 
-The current YAML frontmatter has `name`, `description`. Add a third key:
+The current YAML frontmatter has `name`, `description`. Add a third key as an explicit YAML block sequence (the form used by sibling skills like `telegram/access` and `imessage/configure`, which is unambiguously a list):
 
 ```yaml
-allowed-tools: Monitor, ScheduleWakeup
+allowed-tools:
+  - Monitor
+  - ScheduleWakeup
 ```
 
 The full frontmatter after the edit:
@@ -52,9 +54,13 @@ The full frontmatter after the edit:
 ---
 name: github-pr-review-loop
 description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer / acknowledge), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions. Use for a Copilot-reviewed PR that needs driving to merge, for parallel batches of related PRs, or when deciding whether a Copilot finding is real.
-allowed-tools: Monitor, ScheduleWakeup
+allowed-tools:
+  - Monitor
+  - ScheduleWakeup
 ---
 ```
+
+Rationale for block-list form: an inline comma-separated value (`allowed-tools: Monitor, ScheduleWakeup`) parses as a single YAML scalar string `"Monitor, ScheduleWakeup"`, not a list. Claude Code's slash-command precedent (e.g. `commit-commands/commit.md`) accepts the scalar form via comma-splitting, but the dominant convention for skill frontmatter is the block sequence — unambiguous as a list, avoids silent-fail risk if the parser ever tightens.
 
 Rationale: `allowed-tools` is the documented Claude Code mechanism for skill-scoped pre-authorization. Invoking `Monitor` or `ScheduleWakeup` while this skill is active will not trigger the per-call allow-dialog. Permission is scoped to the skill's active lifetime; outside the skill, the user's existing allow/deny settings still apply.
 
@@ -78,12 +84,16 @@ Docs-only, two-line-delta change:
 2. **Step-7 check** — grep confirms new text landed and old single-tool wording is gone:
 
    ```bash
-   # New text present
+   # New text present (body)
    grep -n "Monitor.*event-driven" skills/github-pr-review-loop/SKILL.md
-   grep -n "allowed-tools: Monitor, ScheduleWakeup" skills/github-pr-review-loop/SKILL.md
+
+   # Frontmatter block-list form (three lines total)
+   grep -n "^allowed-tools:" skills/github-pr-review-loop/SKILL.md
+   grep -n "^  - Monitor$" skills/github-pr-review-loop/SKILL.md
+   grep -n "^  - ScheduleWakeup$" skills/github-pr-review-loop/SKILL.md
 
    # Old single-tool step-7 wording is fully replaced
-   grep -cn "ScheduleWakeup (Claude Code) or a cron" skills/github-pr-review-loop/SKILL.md
+   grep -c "ScheduleWakeup (Claude Code) or a cron" skills/github-pr-review-loop/SKILL.md
    # expect 0
    ```
 
