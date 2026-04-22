@@ -17,6 +17,21 @@
 
 set -euo pipefail
 
+# --- Dependency preflight (phase 0) ---
+#
+# The documented exit-code contract (0/1/2/3) is only honoured if the
+# binaries we lean on are actually present. Without this check, a missing
+# `jq` would cause the first `jq` call to fail with shell error 127 under
+# `set -e`, giving the caller an opaque exit instead of the documented
+# exit 2. Check both up-front so the error message names the problem.
+for _tool in gh jq; do
+    if ! command -v "$_tool" >/dev/null 2>&1; then
+        echo "ERROR: required binary not found on PATH: $_tool" >&2
+        exit 2
+    fi
+done
+unset _tool
+
 # --- Arg parsing & validation (phase 1) ---
 #
 # We accept --repo OWNER/NAME, --pr N, --sha HASH (optional), --dry-run

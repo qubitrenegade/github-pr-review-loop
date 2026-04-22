@@ -43,6 +43,8 @@
 
 The script implements the five-phase flow from the spec's "Internal flow" section (arg parsing → preflight stdin validation → id-map fetch → per-line processing → final summary). Write the complete file at `tools/reply-resolve.sh` with these exact contents:
 
+> **Note:** The script body below captures the plan's original pre-implementation intent. The canonical, current version of the script is the file checked into the repo at `tools/reply-resolve.sh` — several rounds of Copilot review hardened the defensive checks (dependency preflight, portable `mktemp`, `printf` for NDJSON, GraphQL response validation, etc.) after this plan was written. Treat the block below as the starting skeleton, not a spec to rewrite against.
+
 ```bash
 #!/usr/bin/env bash
 #
