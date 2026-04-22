@@ -33,12 +33,14 @@ Two primitives are worth extracting:
 
 ### Scope
 
-First real code change in this skill repo. New files:
+This document describes a separate follow-up implementation PR (this PR, which lands the spec, is not that one).
+
+The implementation PR will be the first real code change in this skill repo. New files to be created:
 
 - `tools/reply-resolve.sh` — the helper (bash, ~50–80 lines).
 - `tools/README.md` — usage, dependency note, Windows invocation note, example heredocs.
 
-Edits to existing files:
+Edits to existing files in the implementation PR:
 
 - `skills/github-pr-review-loop/SKILL.md` — append a pointer sentence to "The loop" step 5.
 - `skills/github-pr-review-loop/references/triage-patterns.md` — add a short paragraph to the "Batching multiple findings into one push" section pointing at the helper.
@@ -57,7 +59,7 @@ Edits to existing files:
 ### Design choices (locked in during brainstorm)
 
 - **Bash script, not Python / gh extension.** The skill's existing references (graphql-snippets.md) are bash-only; shipping a bash helper keeps the dependency footprint identical to what's already assumed. Python would widen the dep surface; a gh CLI extension is additive follow-up work, not blocking.
-- **NDJSON-on-stdin input**, not TSV. TSV breaks on multi-line reply bodies; NDJSON handles arbitrary body content cleanly via `jq` parsing. User writes one JSON object per line in a heredoc or pipes from a file.
+- **NDJSON-on-stdin input**, not TSV. TSV breaks on reply bodies that need embedded newlines or quotes; NDJSON keeps the parser simple via `jq`, but each JSON object still has to stay on a single line — literal newlines in `body` aren't valid. Callers represent multi-line `body` values as JSON-escaped newlines (e.g. `"Fixed in ${SHA}\n\nTests: ..."` in a heredoc) or generate the JSON programmatically from raw text (e.g. via `jq -Rs '{comment_id: 12345, body: .}' < body.txt`). User writes one JSON object per line in a heredoc or pipes from a file.
 - **Tool-side `${SHA}` template substitution** via `--sha` flag, not shell-side pre-interpolation. Works identically for heredoc and file-on-disk inputs. Also nudges toward always citing the commit SHA explicitly (part of the Apply discipline). If `--sha` is missing but a body references `${SHA}`, the script errors before any HTTP — fail-fast prevents a raw `${SHA}` placeholder from landing in a real PR comment.
 - **Best-effort sequential per-thread**, not fail-fast batch: one thread's failure doesn't abort the batch. Within a thread, reply first then resolve; if resolve fails after reply succeeds, the thread ends up replied-but-unresolved, which is the safe default state.
 - **Dual output: stdout NDJSON (machine) + stderr human-readable (operator).** Exit codes: `0` = all per-thread operations succeeded; `1` = at least one per-thread failure (but the batch ran); `2` = preflight validation error (e.g., body references `${SHA}` but `--sha` wasn't provided); `3` = precondition failure that aborts the batch before any per-thread work (id-map GraphQL call failed, or PR has >100 threads which v1 doesn't paginate). Final stderr line summarizes counts on `0` / `1`; stderr shows the error on `2` / `3` exits.
@@ -81,7 +83,9 @@ tools/reply-resolve.sh --repo <owner>/<name> --pr <N> [--sha <hash>] [--dry-run]
 {"comment_id": 67890, "body": "Fixed in `${SHA}` — same fix applied"}
 ```
 
-Each line is a standalone JSON object with exactly two fields: `comment_id` (integer) and `body` (string). Parsed with `jq`; malformed lines fail the batch.
+Each line is a standalone JSON object with exactly two fields: `comment_id` (integer — the thread's opener, i.e. the top-level Copilot inline comment, not a reply) and `body` (string). Parsed with `jq`; malformed lines fail the batch at preflight before any HTTP call.
+
+**Why thread-opener `comment_id` only:** GitHub's review threads each have one opener plus optional replies. The REST-id → GraphQL-thread-id map built from `comments(first: 1) { databaseId }` only contains opener IDs. Callers building NDJSON from the existing `gh api ...comments... | select(.in_reply_to_id == null)` pattern already filter for openers — no change. If a caller supplies a reply's `comment_id` instead, the preflight id-map lookup will miss it and that line will error.
 
 **Output:**
 
@@ -110,11 +114,14 @@ Script structure (bash, ~50–80 lines):
 
 **1. Arg parsing & validation**
 
-`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer. Read stdin once into a variable so we can scan for `${SHA}` before HTTP.
+`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer. Read stdin once into a variable so we can validate it before HTTP.
 
-**2. `${SHA}` template pre-check**
+**2. Preflight stdin validation (no HTTP calls yet)**
 
-If any input line's `body` contains the literal `${SHA}` and `--sha` wasn't passed: print `ERROR: body references ${SHA} but --sha wasn't provided` to stderr, exit 2.
+This step happens entirely before any network I/O, so exit-code `2` (preflight) strictly means "no HTTP calls made":
+
+- Parse each input line with `jq` to confirm it's valid JSON with exactly the two required fields (`comment_id` integer, `body` string). Malformed lines → exit 2 with the offending line number and `jq` error.
+- If any input line's `body` contains the literal `${SHA}` and `--sha` wasn't passed → exit 2 with `ERROR: body references ${SHA} but --sha wasn't provided`.
 
 **3. Fetch the id-map (once per invocation)**
 
