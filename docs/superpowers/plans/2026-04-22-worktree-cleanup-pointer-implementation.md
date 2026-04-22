@@ -53,11 +53,14 @@ After that third bullet (and before the "See [references/wave-orchestration.md].
   `superpowers` plugin installed, see `superpowers:using-git-worktrees`
   for creation (directory selection, safety checks, setup) and
   `superpowers:finishing-a-development-branch` for cleanup after merge.
-  Without that plugin, apply the same discipline manually:
-  `git worktree add <path>` to create, `git worktree remove <path>`
-  (plus removing the directory if files remain) after merge. Don't
-  let stale worktrees accumulate — `gh pr merge --delete-branch`
-  deletes the branches but leaves the worktree directory in place.
+  Without that plugin, follow the worktree-creation recipe in
+  [references/wave-orchestration.md](references/wave-orchestration.md)
+  (the `mkdir -p "../$REPO_DIR.worktrees"` + `git worktree add
+  "../$REPO_DIR.worktrees/$BRANCH" -b "$BRANCH" origin/main` flow),
+  then `git worktree remove "<path>"` after merge (plus removing the
+  directory if files remain). Don't let stale worktrees accumulate —
+  `gh pr merge --delete-branch` deletes the branches but leaves the
+  worktree directory in place.
 ```
 
 Use the Edit tool with the exact text above. Match indentation carefully — the continuation lines after the first are indented with TWO spaces (to align with the bullet's content, not the bullet marker).

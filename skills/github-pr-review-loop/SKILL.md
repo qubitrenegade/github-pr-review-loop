@@ -333,11 +333,14 @@ the orchestration around it.
   `superpowers` plugin installed, see `superpowers:using-git-worktrees`
   for creation (directory selection, safety checks, setup) and
   `superpowers:finishing-a-development-branch` for cleanup after merge.
-  Without that plugin, apply the same discipline manually:
-  `git worktree add <path>` to create, `git worktree remove <path>`
-  (plus removing the directory if files remain) after merge. Don't
-  let stale worktrees accumulate — `gh pr merge --delete-branch`
-  deletes the branches but leaves the worktree directory in place.
+  Without that plugin, follow the worktree-creation recipe in
+  [references/wave-orchestration.md](references/wave-orchestration.md)
+  (the `mkdir -p "../$REPO_DIR.worktrees"` + `git worktree add
+  "../$REPO_DIR.worktrees/$BRANCH" -b "$BRANCH" origin/main` flow),
+  then `git worktree remove "<path>"` after merge (plus removing the
+  directory if files remain). Don't let stale worktrees accumulate —
+  `gh pr merge --delete-branch` deletes the branches but leaves the
+  worktree directory in place.
 
 See [references/wave-orchestration.md](references/wave-orchestration.md)
 for the parallel-waves pattern in detail.
