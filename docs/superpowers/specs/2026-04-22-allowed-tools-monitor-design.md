@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-22
 **Issue:** [#9](https://github.com/qubitrenegade/github-pr-review-loop/issues/9)
-**Type:** Spec/design doc for a minimal SKILL.md frontmatter + body edit. The implementation PR is a 2-file-delta change; no new files, no code.
+**Type:** Spec/design doc for a minimal SKILL.md frontmatter + body edit. The implementation PR is a two-line single-file change (both edits land in `skills/github-pr-review-loop/SKILL.md`); no new files, no code.
 
 ## Problem
 
