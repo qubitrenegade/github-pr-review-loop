@@ -1,6 +1,9 @@
 ---
 name: github-pr-review-loop
 description: Drives GitHub PRs through Copilot review to merge via disciplined triage (apply / dismiss / clarify / defer / acknowledge), empirical dismissal of hallucinations, GraphQL-based re-request, and concrete stop conditions. Use for a Copilot-reviewed PR that needs driving to merge, for parallel batches of related PRs, or when deciding whether a Copilot finding is real.
+allowed-tools:
+  - Monitor
+  - ScheduleWakeup
 ---
 
 # GitHub PR Review Loop
@@ -148,8 +151,7 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
 5. Post inline replies with commit SHAs / empirical dismissals /
    follow-up issue links. Resolve each thread after replying (**except Acknowledge threads, which stay unresolved pending maintainer decision — see "After replying, resolve the conversation"**).
 6. Re-request review via GraphQL mutation.
-7. Wait. Use `ScheduleWakeup` (Claude Code) or a cron / cadence —
-   never busy-poll. 4-5 min is a sensible interval.
+7. Wait. Use `Monitor` (event-driven — emits as soon as Copilot posts a new review, ~30s reaction latency; preferred) or `ScheduleWakeup` (fixed cadence, 4-5 min intervals; fallback when `Monitor` isn't available or when you want cache-aware timing) — never busy-poll.
 8. On wake-up, check status: any new CI failures? any new inline
    comments? any already-addressed comments Copilot re-raised?
 9. Return to step 1 with the new findings, OR fire a stop condition.
