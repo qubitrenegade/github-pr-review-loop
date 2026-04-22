@@ -126,7 +126,9 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
     # shells interprets backslash escapes, which would corrupt JSON strings
     # containing "\n" or "\t" before jq sees them.
     # The `select(type == "number" and . == floor)` filter rejects non-
-    # integers (e.g. 1.5, 1e3) — REST comment IDs are always integers.
+    # integer numbers (e.g. 1.5, 2.7). Note that scientific notation with
+    # an integer value (1e3 → 1000) still parses as an integer and passes;
+    # that's fine — the REST API also treats 1e3 and 1000 interchangeably.
     if ! printf '%s\n' "$LINE" | jq -e '.comment_id | select(type == "number" and . == floor)' >/dev/null 2>&1; then
         echo "ERROR: line $LINE_NUM: malformed NDJSON or missing/non-integer comment_id" >&2
         exit 2
@@ -185,7 +187,7 @@ if ! printf '%s\n' "$ID_MAP_JSON" | jq -e . >/dev/null 2>&1; then
     echo "ERROR: id-map response was not valid JSON: $ID_MAP_JSON" >&2
     exit 3
 fi
-if printf '%s\n' "$ID_MAP_JSON" | jq -e '.errors' >/dev/null 2>&1; then
+if printf '%s\n' "$ID_MAP_JSON" | jq -e '.errors? | length > 0' >/dev/null 2>&1; then
     echo "ERROR: id-map GraphQL returned errors: $(printf '%s\n' "$ID_MAP_JSON" | jq -c '.errors')" >&2
     exit 3
 fi

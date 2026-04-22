@@ -20,7 +20,7 @@
 
 **New files:**
 
-- `tools/reply-resolve.sh` — the helper (bash, ~90–130 lines with teaching-style comments). Single responsibility: given a PR and an NDJSON batch of `{comment_id, body}` pairs, replies to each comment and resolves the corresponding thread, emitting per-line status on stdout + human progress on stderr.
+- `tools/reply-resolve.sh` — the helper (bash; the pre-review estimate was ~90–130 lines, the shipped script is ~330 lines once teaching-style comments, defensive validation for each phase, and Copilot review-round fixes landed). Single responsibility: given a PR and an NDJSON batch of `{comment_id, body}` pairs, replies to each comment and resolves the corresponding thread, emitting per-line status on stdout + human progress on stderr.
 - `tools/README.md` — usage documentation. Single responsibility: describe the helper's CLI, input format, output format, and Windows invocation note.
 
 **Modified files:**
