@@ -262,7 +262,7 @@ Plan doc:
 
 ## Net-new guidance
 
-- **Outside-the-repo blockers** — blockers that look like infra bugs but are rooted in account/org/DNS/vendor settings. A PR can't fix them; iterate on the repo won't help. Now has a dedicated section with a 5-minute triage check and an escalation template.
+- **Outside-the-repo blockers** — blockers that look like infra bugs but are rooted in account/org/DNS/vendor settings. A PR can't fix them; iterating in the repo won't help. Now has a dedicated section with a 5-minute triage check and an escalation template.
 
 ## Out of scope
 

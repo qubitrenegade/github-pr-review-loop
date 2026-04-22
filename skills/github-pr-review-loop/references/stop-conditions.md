@@ -302,7 +302,7 @@ production" and you can't confirm or refute after genuine
 investigation, stop and ask the maintainer before merging. Don't merge
 on hope.
 
-**External-system blockers have their own section below** — when the failure isn't about the review loop or this repo's code, see "Outside-the-repo blockers." Those blockers wear infra-bug costumes but can't be fixed from a PR.
+See also: "Outside-the-repo blockers" below. When the failure isn't about the review loop or this repo's code, those blockers may look like infra bugs but can't be fixed from a PR.
 
 ## Outside-the-repo blockers
 
