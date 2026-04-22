@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-22
 **Issue:** [#4](https://github.com/qubitrenegade/github-pr-review-loop/issues/4)
-**Type:** First real code change in the repo — ships a bash script under `tools/`. Prior issues (#5, #3, #2, #6, #7) were docs-only.
+**Type:** Spec/design doc for the repo's first real code change. The bash script under `tools/` will ship in a follow-up implementation PR. Prior issues (#5, #3, #2, #6, #7) were docs-only.
 
 ## Problem
 
@@ -69,7 +69,7 @@ Edits to existing files in the implementation PR:
 **Invocation:**
 
 ```bash
-tools/reply-resolve.sh --repo <owner>/<name> --pr <N> [--sha <hash>] [--dry-run] < input.ndjson
+tools/reply-resolve.sh --repo <owner>/<repo> --pr <N> [--sha <hash>] [--dry-run] < input.ndjson
 ```
 
 - `--repo` and `--pr` required. `<N>` accepts any integer; no local-clone requirement.
@@ -259,7 +259,7 @@ No automated tests. The script is thin enough that code review + the smoke test 
 
 ## Out-of-scope / follow-ups
 
-After this PR merges, all six issues in the batch (#5, #3, #2, #6, #7, #4) that motivated this spec → plan → implement cycle are resolved.
+After the full spec → implementation sequence lands (this PR plus the follow-up implementation PR it describes), all six issues in the batch (#5, #3, #2, #6, #7, #4) that motivated this spec → plan → implement cycle are resolved.
 
 Possible future additions (not blocking):
 
