@@ -40,7 +40,7 @@ No other files edited. No code. No new references added. No plugin-manifest chan
 
 #### 1. Add `allowed-tools` to frontmatter
 
-The current YAML frontmatter has `name`, `description`. Add a third key as an explicit YAML block sequence (the form used by sibling skills like `telegram/access` and `imessage/configure`, which is unambiguously a list):
+The current YAML frontmatter has `name`, `description`. Add a third key as an explicit YAML block sequence — the unambiguously-a-list form. This convention is used by other Claude Code skills in the broader ecosystem (examples: external plugins `telegram/skills/access/SKILL.md` and `imessage/skills/configure/SKILL.md`, found in the Claude-Plugins-Official marketplace; not paths in this repository):
 
 ```yaml
 allowed-tools:
@@ -60,7 +60,7 @@ allowed-tools:
 ---
 ```
 
-Rationale for block-list form: an inline comma-separated value (`allowed-tools: Monitor, ScheduleWakeup`) parses as a single YAML scalar string `"Monitor, ScheduleWakeup"`, not a list. Claude Code's slash-command precedent (e.g. `commit-commands/commit.md`) accepts the scalar form via comma-splitting, but the dominant convention for skill frontmatter is the block sequence — unambiguous as a list, avoids silent-fail risk if the parser ever tightens.
+Rationale for block-list form: an inline comma-separated value (`allowed-tools: Monitor, ScheduleWakeup`) parses as a single YAML scalar string `"Monitor, ScheduleWakeup"`, not a list. The block-sequence form is unambiguously a list at the YAML level — no parser-specific comma-splitting required. Using it keeps the value's intended shape explicit and avoids silent-fail risk if the parser ever tightens its interpretation of the scalar form.
 
 Rationale: `allowed-tools` is the documented Claude Code mechanism for skill-scoped pre-authorization. Invoking `Monitor` or `ScheduleWakeup` while this skill is active will not trigger the per-call allow-dialog. Permission is scoped to the skill's active lifetime; outside the skill, the user's existing allow/deny settings still apply.
 
@@ -80,7 +80,7 @@ Both tools are pre-authorized via the frontmatter change above — callers don't
 
 Docs-only, two-line-delta change:
 
-1. **Frontmatter check** — `head -6 skills/github-pr-review-loop/SKILL.md` shows the new `allowed-tools:` key in correct YAML (single-line, comma-separated values, inside the frontmatter block).
+1. **Frontmatter check** — `head -8 skills/github-pr-review-loop/SKILL.md` shows the new `allowed-tools:` key in correct YAML block-sequence form (the `allowed-tools:` header line followed by `  - Monitor` and `  - ScheduleWakeup` on separate lines, all inside the frontmatter block).
 2. **Step-7 check** — grep confirms new text landed and old single-tool wording is gone:
 
    ```bash
