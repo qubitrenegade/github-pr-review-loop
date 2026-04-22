@@ -82,6 +82,13 @@ fi
 OWNER="${REPO%/*}"
 NAME="${REPO#*/}"
 
+# --sha, if provided, must look like a git SHA (hex chars). Catches typos
+# like '--sha v1.0.0' or an accidental '/' before they land in a body.
+if [ -n "$SHA" ] && ! [[ "$SHA" =~ ^[0-9a-fA-F]+$ ]]; then
+    echo "ERROR: --sha must be hex (got: '$SHA')" >&2
+    exit 2
+fi
+
 # --- Buffer stdin to a temp file (phase 1 cont'd) ---
 #
 # Command substitution ($(cat)) strips trailing newlines and holds the whole
@@ -224,7 +231,20 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
         FAIL=$((FAIL + 1))
         continue
     }
-    REPLY_ID=$(echo "$REPLY_OUTPUT" | jq -r '.id')
+    REPLY_ID=$(echo "$REPLY_OUTPUT" | jq -r '.id // empty')
+
+    # Guard: gh exited 0 but the response didn't contain an `id` field.
+    # Rare (would indicate API format drift or an HTML error page), but
+    # without this check the reply_id would be empty and the jq --argjson
+    # call below would fail with an opaque parse error. Emit a clear
+    # status="error" instead.
+    if ! [[ "$REPLY_ID" =~ ^[0-9]+$ ]]; then
+        jq -cn --argjson cid "$COMMENT_ID" --arg tid "$THREAD_ID" --arg err "reply POST succeeded but response lacked an integer 'id' field: $REPLY_OUTPUT" \
+            '{comment_id: $cid, thread_id: $tid, reply_id: null, resolved: false, status: "error", error: $err}'
+        echo "✗ $COMMENT_ID reply response malformed: $REPLY_OUTPUT" >&2
+        FAIL=$((FAIL + 1))
+        continue
+    fi
 
     # Phase 4b: resolve via GraphQL. Reply already landed, so a resolve
     # failure emits status="partial" (replied-but-unresolved, the safe
