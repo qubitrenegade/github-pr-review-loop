@@ -4,7 +4,7 @@
 
 **Goal:** Apply the two edits from `docs/superpowers/specs/2026-04-22-allowed-tools-monitor-design.md` to `skills/github-pr-review-loop/SKILL.md` so `Monitor` and `ScheduleWakeup` are pre-authorized while the skill is active (no per-call allow-dialog) and "The loop" step 7 recommends `Monitor` as the primary polling mechanism.
 
-**Architecture:** Minimal single-file change (two hunks landing in `skills/github-pr-review-loop/SKILL.md`): a 3-line `allowed-tools` block-sequence addition to the YAML frontmatter + a one-sentence rewrite of "The loop" step 7. No new files, no code, no tests.
+**Architecture:** Minimal single-file implementation change (two hunks landing in `skills/github-pr-review-loop/SKILL.md`): a 3-line `allowed-tools` block-sequence addition to the YAML frontmatter + a one-sentence rewrite of "The loop" step 7. No new code files or tests; this plan doc ships as the audit trail.
 
 **Tech Stack:** Plain Markdown + YAML frontmatter. Git. `gh` CLI.
 
