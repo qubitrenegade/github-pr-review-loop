@@ -45,10 +45,10 @@ tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" --sha "$SHA" --dry-run < in
 
 ### Input — NDJSON on stdin
 
-Each line is a standalone JSON object with exactly two fields:
+Each line is a standalone JSON object with two required fields (additional fields are silently ignored):
 
-- `comment_id` (integer) — the thread opener's REST comment ID (top-level Copilot inline comment, NOT a reply). The preflight id-map only contains openers; supplying a reply's ID will fail the thread-id lookup and emit a per-line error.
-- `body` (string) — the reply text. May reference `${SHA}` for tool-side substitution. Literal newlines inside `body` aren't valid NDJSON; use JSON-escaped `\n` or generate the JSON programmatically (e.g. `jq -Rsc '{comment_id: 12345, body: .}' < body.txt`).
+- `comment_id` (integer, required) — the thread opener's REST comment ID (top-level Copilot inline comment, NOT a reply). The preflight id-map only contains openers; supplying a reply's ID will fail the thread-id lookup and emit a per-line error.
+- `body` (string, required) — the reply text. May reference `${SHA}` for tool-side substitution. Literal newlines inside `body` aren't valid NDJSON; use JSON-escaped `\n` or generate the JSON programmatically (e.g. `jq -Rsc '{comment_id: 12345, body: .}' < body.txt`).
 
 Example stdin:
 

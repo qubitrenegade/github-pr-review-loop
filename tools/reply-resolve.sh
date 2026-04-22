@@ -261,7 +261,11 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
         FAIL=$((FAIL + 1))
         continue
     }
-    REPLY_ID=$(printf '%s\n' "$REPLY_OUTPUT" | jq -r '.id // empty')
+    # jq suffix `|| echo ""` so `set -e` doesn't kill the script if REPLY_OUTPUT
+    # isn't JSON at all (e.g., `gh api 2>&1` mixed stderr text into stdout on
+    # a transient proxy error). The integer regex below catches both the
+    # "jq failed" case and the "jq emitted non-integer" case uniformly.
+    REPLY_ID=$(printf '%s\n' "$REPLY_OUTPUT" | jq -r '.id // empty' 2>/dev/null || echo "")
 
     # Guard: gh exited 0 but the response didn't contain an `id` field.
     # Rare (would indicate API format drift or an HTML error page), but
@@ -288,6 +292,18 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
         FAIL=$((FAIL + 1))
         continue
     }
+
+    # gh exited 0 but GraphQL can still return 200 with `.errors` or with
+    # `.data.resolveReviewThread.thread.isResolved != true`. Verify the
+    # thread actually resolved before claiming status="ok".
+    RESOLVED_FLAG=$(printf '%s\n' "$RESOLVE_OUTPUT" | jq -r '.data.resolveReviewThread.thread.isResolved // false' 2>/dev/null || echo "false")
+    if [ "$RESOLVED_FLAG" != "true" ]; then
+        jq -cn --argjson cid "$COMMENT_ID" --arg tid "$THREAD_ID" --argjson rid "$REPLY_ID" --arg err "resolve mutation returned 200 but thread.isResolved != true: $RESOLVE_OUTPUT" \
+            '{comment_id: $cid, thread_id: $tid, reply_id: $rid, resolved: false, status: "partial", error: $err}'
+        echo "⚠ $COMMENT_ID replied but resolve unconfirmed: $RESOLVE_OUTPUT" >&2
+        FAIL=$((FAIL + 1))
+        continue
+    fi
 
     jq -cn --argjson cid "$COMMENT_ID" --arg tid "$THREAD_ID" --argjson rid "$REPLY_ID" \
         '{comment_id: $cid, thread_id: $tid, reply_id: $rid, resolved: true, status: "ok"}'
