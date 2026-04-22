@@ -95,7 +95,15 @@ fi
 # batch in a shell variable. A temp file avoids both problems and lets us
 # re-read the input across preflight + per-thread phases with consistent
 # line numbering.
-INPUT_FILE=$(mktemp)
+# Portable mktemp: GNU `mktemp` accepts a direct template path; BSD/macOS
+# needs `-t`. Try GNU form first, fall back to BSD form.
+INPUT_FILE="$(
+    mktemp "${TMPDIR:-/tmp}/reply-resolve.XXXXXX" 2>/dev/null \
+        || mktemp -t reply-resolve.XXXXXX 2>/dev/null
+)" || {
+    echo "ERROR: failed to create temporary file" >&2
+    exit 2
+}
 trap 'rm -f "$INPUT_FILE"' EXIT
 cat > "$INPUT_FILE"
 
@@ -114,18 +122,22 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
 
     # jq -e exits non-zero if the filter fails (e.g., the expected fields
     # aren't present with the expected types). We only care about the exit
-    # status at this stage.
-    if ! echo "$LINE" | jq -e '.comment_id | numbers' >/dev/null 2>&1; then
+    # status at this stage. printf beats echo here because echo on some
+    # shells interprets backslash escapes, which would corrupt JSON strings
+    # containing "\n" or "\t" before jq sees them.
+    # The `select(type == "number" and . == floor)` filter rejects non-
+    # integers (e.g. 1.5, 1e3) — REST comment IDs are always integers.
+    if ! printf '%s\n' "$LINE" | jq -e '.comment_id | select(type == "number" and . == floor)' >/dev/null 2>&1; then
         echo "ERROR: line $LINE_NUM: malformed NDJSON or missing/non-integer comment_id" >&2
         exit 2
     fi
-    if ! echo "$LINE" | jq -e '.body | strings' >/dev/null 2>&1; then
+    if ! printf '%s\n' "$LINE" | jq -e '.body | strings' >/dev/null 2>&1; then
         echo "ERROR: line $LINE_NUM: malformed NDJSON or missing/non-string body" >&2
         exit 2
     fi
 
     # If any body references ${SHA}, --sha must have been supplied.
-    BODY=$(echo "$LINE" | jq -r '.body')
+    BODY=$(printf '%s\n' "$LINE" | jq -r '.body')
     if [ -z "$SHA" ] && [[ "$BODY" == *'${SHA}'* ]]; then
         echo "ERROR: line $LINE_NUM: body references \${SHA} but --sha wasn't provided" >&2
         exit 2
@@ -164,7 +176,25 @@ ID_MAP_JSON=$(gh api graphql \
     exit 3
 }
 
-TOTAL_THREADS=$(echo "$ID_MAP_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.totalCount')
+# `gh api graphql` can exit 0 while the response body is non-JSON (proxy
+# HTML, auth challenge) or a GraphQL error payload (`{"errors": [...]}`) or
+# a payload with `.data.repository.pullRequest` null (repo/PR not found).
+# Validate the shape before trusting totalCount — downstream `-gt` on a
+# non-integer would silently do the wrong thing.
+if ! printf '%s\n' "$ID_MAP_JSON" | jq -e . >/dev/null 2>&1; then
+    echo "ERROR: id-map response was not valid JSON: $ID_MAP_JSON" >&2
+    exit 3
+fi
+if printf '%s\n' "$ID_MAP_JSON" | jq -e '.errors' >/dev/null 2>&1; then
+    echo "ERROR: id-map GraphQL returned errors: $(printf '%s\n' "$ID_MAP_JSON" | jq -c '.errors')" >&2
+    exit 3
+fi
+if ! printf '%s\n' "$ID_MAP_JSON" | jq -e '.data.repository.pullRequest.reviewThreads.totalCount | numbers' >/dev/null 2>&1; then
+    echo "ERROR: id-map response missing expected shape (pullRequest or reviewThreads nil). Raw: $ID_MAP_JSON" >&2
+    exit 3
+fi
+
+TOTAL_THREADS=$(printf '%s\n' "$ID_MAP_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.totalCount')
 if [ "$TOTAL_THREADS" -gt 100 ]; then
     echo "ERROR: PR has $TOTAL_THREADS threads; v1 of this script doesn't paginate. File an issue if you hit this." >&2
     exit 3
@@ -172,7 +202,7 @@ fi
 
 # Transform nodes into { "<comment_id>": "<thread_id>", ... }. The map keys
 # are stringified integers; lookup below uses --arg (string) to match.
-ID_MAP=$(echo "$ID_MAP_JSON" | jq '
+ID_MAP=$(printf '%s\n' "$ID_MAP_JSON" | jq '
     .data.repository.pullRequest.reviewThreads.nodes
     | map({ (.comments.nodes[0].databaseId | tostring): .id })
     | add // {}
@@ -193,8 +223,8 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
     LINE_NUM=$((LINE_NUM + 1))
     [ -z "$LINE" ] && continue
 
-    COMMENT_ID=$(echo "$LINE" | jq -r '.comment_id')
-    BODY=$(echo "$LINE" | jq -r '.body')
+    COMMENT_ID=$(printf '%s\n' "$LINE" | jq -r '.comment_id')
+    BODY=$(printf '%s\n' "$LINE" | jq -r '.body')
 
     # ${SHA} substitution happens per-line so the emitted 'body' in the
     # dry-run status reflects exactly what would be posted.
@@ -204,7 +234,7 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
 
     # Thread-id lookup. --arg passes the comment_id as a JSON string; the
     # map keys are strings too, so .[$id] finds the thread or yields empty.
-    THREAD_ID=$(echo "$ID_MAP" | jq -r --arg id "$COMMENT_ID" '.[$id] // empty')
+    THREAD_ID=$(printf '%s\n' "$ID_MAP" | jq -r --arg id "$COMMENT_ID" '.[$id] // empty')
 
     if [ -z "$THREAD_ID" ]; then
         jq -cn --argjson cid "$COMMENT_ID" \
@@ -231,7 +261,7 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
         FAIL=$((FAIL + 1))
         continue
     }
-    REPLY_ID=$(echo "$REPLY_OUTPUT" | jq -r '.id // empty')
+    REPLY_ID=$(printf '%s\n' "$REPLY_OUTPUT" | jq -r '.id // empty')
 
     # Guard: gh exited 0 but the response didn't contain an `id` field.
     # Rare (would indicate API format drift or an HTML error page), but
