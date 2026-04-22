@@ -27,6 +27,7 @@ etc, which is both safe and idiomatic.
 - Re-request Copilot review after a push
 - List a PR's inline comments (all, or latest round only)
 - Reply to a specific inline comment
+- Batching reply + resolve with `tools/reply-resolve.sh`
 - List review threads with their resolved state + thread IDs
 - Resolve a review thread after replying
 - Bulk-resolve all threads you've already replied to
@@ -216,6 +217,16 @@ reply 3106073129 "Fixed in acc31d3 — stub now forwards non-clickwork queries t
 reply 3106083785 "Fixed in 0e9fc99 — switched to git+https."
 reply 3106088847 "Dismissing — see evidence: \`grep -c common-footguns docs/LLM_REFERENCE.md\` returns 1."
 ```
+
+## Batching reply + resolve with `tools/reply-resolve.sh`
+
+The raw `repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies`
+POST and `resolveReviewThread` mutation snippets above are the
+primitives. For batches (more than two threads per round),
+`tools/reply-resolve.sh` at the repo root wraps both into a single
+per-thread transaction, handles the REST `comment_id` → GraphQL
+`thread_id` lookup internally, and supports `${SHA}` templating.
+See `tools/README.md` for usage.
 
 ## List review threads with resolved state
 
