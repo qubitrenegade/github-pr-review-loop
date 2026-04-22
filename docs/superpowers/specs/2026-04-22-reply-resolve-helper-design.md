@@ -87,7 +87,7 @@ tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" --sha "$SHA" --dry-run < in
 
 - `--repo` and `--pr` required. `<N>` accepts any integer; no local-clone requirement.
 - `--sha` optional. When provided, the script substitutes `${SHA}` in every reply body before posting. If a body references `${SHA}` and `--sha` wasn't passed, the script errors (exit 2) before any HTTP calls.
-- `--dry-run` optional. Performs the same preflight + id-map fetch (read-only GraphQL) + `${SHA}` substitution + thread-id lookup as a real run, but makes no write calls — no reply POST, no resolve mutation. Still preserves the machine-readable stdout contract: emits exactly one NDJSON object per input line that passes preflight, with the same identifying fields a real run would emit (`comment_id`, `thread_id`, resolved body after substitution) plus `"status": "dry_run"` and `"reply_id": null`, `"resolved": false`. Because no write attempts are made, dry-run never exits `1`; if preflight + id-map fetch succeed for the whole batch it exits `0`, and if preflight fails it exits `2` (same as a real run). Exit `3` (id-map fetch failure) also applies identically.
+- `--dry-run` optional. Performs the same preflight + id-map fetch (read-only GraphQL) + `${SHA}` substitution + thread-id lookup as a real run, but makes no write calls — no reply POST, no resolve mutation. Still preserves the machine-readable stdout contract: emits exactly one NDJSON object per input line that passes preflight. For lines where substitution + lookup succeed, emit the same identifying fields a real run would emit (`comment_id`, `thread_id`, resolved body after substitution) plus `"status": "dry_run"` and `"reply_id": null`, `"resolved": false`. For lines whose per-line validation fails (e.g., thread-id lookup misses — no matching thread for the supplied `comment_id`), emit the same per-line `"status": "error"` shape a real run would emit for that condition. **Exit codes in dry-run mirror a real run on everything except the write-call failures that dry-run skips:** exits `0` only if every post-preflight line ends in `"status":"dry_run"`; exits `1` if any line ends in `"status":"error"` (thread lookup missed); exits `2` on preflight failure; exits `3` on id-map fetch failure. Dry-run never emits `"partial"` because partial only arises from resolve-mutation failure, which dry-run doesn't attempt.
 
 **Stdin — NDJSON, one reply per line:**
 
@@ -135,13 +135,13 @@ Script structure (bash, ~50–80 lines):
 
 **1. Arg parsing & validation**
 
-`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer; validate `--repo` matches `owner/repo` form (exactly one `/`, non-empty on each side) and split it into shell variables `OWNER` and `NAME` for the GraphQL id-map query. Treat malformed `--repo` as a preflight validation error (exit 2 with a clear message) so callers see the issue up front rather than getting an opaque GraphQL `repository not found` later. Read stdin once into a variable so we can validate it before HTTP.
+`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer; validate `--repo` matches `owner/repo` form (exactly one `/`, non-empty on each side) and split it into shell variables `OWNER` and `NAME` for the GraphQL id-map query. Treat malformed `--repo` as a preflight validation error (exit 2 with a clear message) so callers see the issue up front rather than getting an opaque GraphQL `repository not found` later. Buffer stdin once to a temp file (e.g. `INPUT_FILE=$(mktemp)`, `cat > "$INPUT_FILE"`, `trap 'rm -f "$INPUT_FILE"' EXIT`) so later phases can read it line-by-line without losing trailing newlines (bash `$(cmd)` command substitution strips them) and without holding the whole batch in a shell variable. The preflight and per-thread phases both read from this temp file, which keeps input order and line-number reporting consistent.
 
 **2. Preflight stdin validation (no HTTP calls yet)**
 
 This step happens entirely before any network I/O, so exit-code `2` (preflight) strictly means "no HTTP calls made":
 
-- Parse each input line with `jq` to confirm it's valid JSON with exactly the two required fields (`comment_id` integer, `body` string). Malformed lines → exit 2 with the offending line number and `jq` error.
+- Read the buffered temp file line-by-line and parse each line with `jq` to confirm it's valid JSON with exactly the two required fields (`comment_id` integer, `body` string). Malformed lines → exit 2 with the offending line number and `jq` error.
 - If any input line's `body` contains the literal `${SHA}` and `--sha` wasn't passed → exit 2 with `ERROR: body references ${SHA} but --sha wasn't provided`.
 
 **3. Fetch the id-map (once per invocation)**
