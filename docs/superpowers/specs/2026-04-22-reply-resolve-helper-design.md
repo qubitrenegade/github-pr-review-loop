@@ -69,7 +69,14 @@ Edits to existing files in the implementation PR:
 **Invocation:**
 
 ```bash
-tools/reply-resolve.sh --repo <owner>/<repo> --pr <N> [--sha <hash>] [--dry-run] < input.ndjson
+# Set env vars first so the snippet is copy-paste-safe (angle-bracket
+# placeholders like <N> are I/O redirection tokens in bash/zsh; quote
+# them on the RHS). Same pattern the skill's other snippets use.
+REPO="<owner>/<repo>"    # e.g. qubitrenegade/github-pr-review-loop
+PR_NUM="<N>"             # e.g. 42
+SHA="<hash>"             # optional, omit if no ${SHA} in any body
+
+tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" [--sha "$SHA"] [--dry-run] < input.ndjson
 ```
 
 - `--repo` and `--pr` required. `<N>` accepts any integer; no local-clone requirement.
