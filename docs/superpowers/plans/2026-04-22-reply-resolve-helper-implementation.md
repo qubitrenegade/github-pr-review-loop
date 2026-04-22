@@ -726,8 +726,8 @@ If no open PR with unresolved threads is available, skip to Step 3 (help-check +
 Pick a PR number `$PR_NUM` with at least one unresolved Copilot thread, look up a `comment_id` from that thread (any thread-opener comment), and run:
 
 ```bash
-PR_NUM=<N>
-COMMENT_ID=<id from the target PR>
+PR_NUM="<N>"
+COMMENT_ID="<id from the target PR>"
 SHA=$(git rev-parse --short HEAD)
 
 echo "{\"comment_id\": $COMMENT_ID, \"body\": \"Smoke test in \`\${SHA}\`.\"}" \

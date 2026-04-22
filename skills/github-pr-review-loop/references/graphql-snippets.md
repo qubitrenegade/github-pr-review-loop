@@ -220,7 +220,13 @@ reply 3106088847 "Dismissing — see evidence: \`grep -c common-footguns docs/LL
 
 ## Batching reply + resolve with `tools/reply-resolve.sh`
 
-The raw `repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies` POST and `resolveReviewThread` mutation snippets above are the primitives. For batches (more than two threads per round), `tools/reply-resolve.sh` at the repo root wraps both into a single per-thread transaction, handles the REST `comment_id` → GraphQL `thread_id` lookup internally, and supports `${SHA}` templating. See `tools/README.md` for usage.
+The raw `repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies`
+POST and `resolveReviewThread` mutation snippets above are the
+primitives. For batches (more than two threads per round),
+`tools/reply-resolve.sh` at the repo root wraps both into a single
+per-thread transaction, handles the REST `comment_id` → GraphQL
+`thread_id` lookup internally, and supports `${SHA}` templating.
+See `tools/README.md` for usage.
 
 ## List review threads with resolved state
 

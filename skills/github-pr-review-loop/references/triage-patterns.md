@@ -286,7 +286,10 @@ thread coherent:
 Pushing a commit for each finding individually multiplies the Copilot
 rounds and sends the same diff through N reviews. Wasteful.
 
-For the reply-and-resolve step specifically (processing many threads in one round), `tools/reply-resolve.sh` at the repo root takes NDJSON on stdin and handles the full reply+resolve transaction per thread. See `tools/README.md` for usage.
+For the reply-and-resolve step specifically (processing many threads
+in one round), `tools/reply-resolve.sh` at the repo root takes NDJSON
+on stdin and handles the full reply+resolve transaction per thread.
+See `tools/README.md` for usage.
 
 ### Sweep before you push
 

@@ -150,7 +150,9 @@ For a single PR, the loop is this. Repeat until a stop condition fires.
    under "Sweep before you push" for the pattern.
 5. Post inline replies with commit SHAs / empirical dismissals /
    follow-up issue links. Resolve each thread after replying (**except Acknowledge threads, which stay unresolved pending maintainer decision — see "After replying, resolve the conversation"**).
-   For batches of more than two threads per round, `tools/reply-resolve.sh` handles the reply+resolve roundtrip — see `tools/README.md`.
+   For batches of more than two threads per round,
+   `tools/reply-resolve.sh` handles the reply+resolve roundtrip —
+   see `tools/README.md`.
 6. Re-request review via GraphQL mutation.
 7. Wait. Use `Monitor` (event-driven — emits as soon as Copilot posts a new review, ~30s reaction latency; preferred) or `ScheduleWakeup` (fixed cadence, 4-5 min intervals; fallback when `Monitor` isn't available or when you want cache-aware timing) — never busy-poll.
 8. On wake-up, check status: any new CI failures? any new inline
