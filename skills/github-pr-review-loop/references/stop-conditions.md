@@ -14,6 +14,7 @@ arbitrary thresholds.
 - Tertiary stop: suggestion volume dries up
 - User override of the review loop
 - Failure-mode stops
+- Outside-the-repo blockers
 - Anti-patterns (don't stop for these reasons)
 - Putting it together
 
@@ -300,6 +301,33 @@ Copilot says "this will leak secrets" or "this will crash in
 production" and you can't confirm or refute after genuine
 investigation, stop and ask the maintainer before merging. Don't merge
 on hope.
+
+**External-system blockers have their own section below** — when the failure isn't about the review loop or this repo's code, see "Outside-the-repo blockers." Those blockers wear infra-bug costumes but can't be fixed from a PR.
+
+## Outside-the-repo blockers
+
+Some failures look like infra-bug material — the deploy doesn't reach the public URL, a secret isn't reaching CI, an external service returns 4xx — but the root cause is a setting in a system this repo doesn't own. GitHub org / account configuration, DNS, PyPI project settings, upstream-vendor policies, custom-domain cascades. You can't fix these from a PR.
+
+**The 5-minute check** — when the "this is an infra bug I need to investigate" muscle memory fires, run through this list before iterating:
+
+1. Is the knob that would fix this inside this repo's clone? (Editable file, workflow, config.) If yes, fix it here. If no, keep going.
+2. Is it a GitHub repo setting? (Settings tab on this repo: Pages, Actions secrets, branch protection, required checks.) If yes, needs repo-admin; flag to maintainer.
+3. Is it a GitHub org or account setting? (Verified domains on user pages, org-level Actions policies, SSO rules, billing/quota.) If yes, needs org/account-owner; flag + move on.
+4. Is it DNS, external service config, or vendor policy? (Registrar records, PyPI project settings, vendor support ticket.) If yes, not fixable from GitHub at all; flag + move on.
+
+**Heuristics:**
+
+- If you've spent more than ~5 minutes iterating on the same external surface without making the public behavior budge, stop iterating and apply the check above. The "try harder, the infra IS the bug" muscle memory is miscalibrated for outside-the-repo cases.
+- Symptoms that usually indicate outside-the-repo: deploy pipelines succeed but public URL 404s; secret reaches Actions but external service rejects; workflow succeeds on fork but fails on upstream; CI workflow fails identically on `main` as on the PR.
+- Symptoms that usually indicate in-repo-infra: failure references specific lines/files in this repo's workflow YAML; failure reproduces locally; failure is new since a recent commit.
+
+**Escalation template:**
+
+> Blocked: external. Verified in this PR: \<what succeeded (deploy ran, Pages API returned 201, etc.)>. Remaining symptom: \<what still fails (canonical URL 301→404)>. Suspected root cause: \<the specific account/org/DNS/vendor setting>. This is outside the repo's blast radius; filed as #\<N> for tracking, flagging to @\<maintainer> or @\<account-owner>. Moving on to next PR.
+
+Three commitments: capture verified evidence, name the exact external knob, file a tracking issue. The tracking issue is what keeps it from dying silently.
+
+**Concrete example** — on clickwork PR #99's docs-site deploy, the `mkdocs gh-deploy` step ran successfully and wrote to `gh-pages`; the Pages API enabled the site (returned 201). But `https://qubitrenegade.github.io/clickwork/` 301-redirected to `http://qubitrenegade.com/clickwork/`, which 404s. Root cause: the account owner had a verified custom domain (`qubitrenegade.com`) configured on their user-pages repo, which cascades to all project pages. Nothing in this repo could have fixed it. The fix was an account-level GitHub setting, not a code change. 15 minutes were spent iterating before the pattern surfaced; the 5-minute check would have caught it at step 3.
 
 ## Anti-patterns — don't stop for these reasons
 
