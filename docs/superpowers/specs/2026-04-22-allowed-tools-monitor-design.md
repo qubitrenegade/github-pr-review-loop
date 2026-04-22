@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-22
 **Issue:** [#9](https://github.com/qubitrenegade/github-pr-review-loop/issues/9)
-**Type:** Spec/design doc for a minimal SKILL.md frontmatter + body edit. The implementation PR is a two-line single-file change (both edits land in `skills/github-pr-review-loop/SKILL.md`); no new files, no code.
+**Type:** Spec/design doc for a minimal SKILL.md frontmatter + body edit. The implementation PR is a minimal single-file change — two edits, both landing in `skills/github-pr-review-loop/SKILL.md`: a 3-line `allowed-tools` block-sequence addition to the frontmatter + a one-sentence rewrite of "The loop" step 7. No new files, no code.
 
 ## Problem
 
@@ -78,7 +78,7 @@ Both tools are pre-authorized via the frontmatter change above — callers don't
 
 ### Verification
 
-Docs-only, two-line-delta change:
+Docs-only, minimal single-file change (two hunks: a 3-line `allowed-tools` block-sequence addition to the frontmatter + a one-sentence rewrite of step 7):
 
 1. **Frontmatter check** — `head -8 skills/github-pr-review-loop/SKILL.md` shows the new `allowed-tools:` key in correct YAML block-sequence form (the `allowed-tools:` header line followed by `  - Monitor` and `  - ScheduleWakeup` on separate lines, all inside the frontmatter block).
 2. **Step-7 check** — grep confirms new text landed and old single-tool wording is gone:
