@@ -97,14 +97,14 @@ tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" --sha "$SHA" --dry-run < in
 
 Each line is a standalone JSON object with exactly two fields: `comment_id` (integer — the thread's opener, i.e. the top-level Copilot inline comment, not a reply) and `body` (string). Parsed with `jq`; malformed lines fail the batch at preflight before any HTTP call.
 
-**Why thread-opener `comment_id` only:** GitHub's review threads each have one opener plus optional replies. The REST-id → GraphQL-thread-id map built from `comments(first: 1) { databaseId }` only contains opener IDs. Callers building NDJSON from the existing `gh api ...comments... | select(.in_reply_to_id == null)` pattern already filter for openers — no change. If a caller supplies a reply's `comment_id` instead, the preflight id-map lookup will miss it and that line will error.
+**Why thread-opener `comment_id` only:** GitHub's review threads each have one opener plus optional replies. The REST-id → GraphQL-thread-id map built from `comments(first: 1) { databaseId }` only contains opener IDs. Callers building NDJSON from the existing `gh api ...comments... | select(.in_reply_to_id == null)` pattern already filter for openers — no change. If a caller supplies a reply's `comment_id` instead, the thread-id lookup will miss it and that line will error.
 
 **Output:**
 
 - **stdout** — NDJSON status per input line, in input order. The `status` field takes one of three values:
   - `"ok"` — reply POST succeeded AND resolve mutation succeeded. `reply_id` populated, `resolved: true`, no `error` field.
   - `"partial"` — reply POST succeeded but resolve mutation failed. `reply_id` populated, `resolved: false`, `error` describes the resolve failure. The thread ends up replied-but-unresolved (a safe fallback that matches the pre-tool manual state).
-  - `"error"` — reply POST failed (or the preflight id-map lookup found no thread for this `comment_id`). `reply_id: null`, `resolved: false`, `error` describes the failure. Resolve is NOT attempted when reply fails.
+  - `"error"` — reply POST failed (or the thread-id lookup found no thread for this `comment_id`). `reply_id: null`, `resolved: false`, `error` describes the failure. Resolve is NOT attempted when reply fails.
 
   Examples:
   ```json
@@ -132,7 +132,7 @@ Script structure (bash, ~50–80 lines):
 
 **1. Arg parsing & validation**
 
-`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer. Read stdin once into a variable so we can validate it before HTTP.
+`while/case` loop for `--repo`, `--pr`, `--sha`, `--dry-run`, `--help`. Validate both required flags present; validate `--pr` is an integer; validate `--repo` matches `owner/repo` form (exactly one `/`, non-empty on each side) and split it into shell variables `OWNER` and `NAME` for the GraphQL id-map query. Treat malformed `--repo` as a preflight validation error (exit 2 with a clear message) so callers see the issue up front rather than getting an opaque GraphQL `repository not found` later. Read stdin once into a variable so we can validate it before HTTP.
 
 **2. Preflight stdin validation (no HTTP calls yet)**
 
