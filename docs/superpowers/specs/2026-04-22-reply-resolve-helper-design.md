@@ -80,13 +80,14 @@ SHA="<hash>"             # optional, omit if no ${SHA} in any body
 tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" < input.ndjson
 
 # With optional flags: --sha enables ${SHA} templating; --dry-run
-# prints what would happen without making any HTTP calls
+# performs the read-only id-map fetch + ${SHA} substitution + thread-id
+# lookup, but makes no write calls (no reply POST, no resolve mutation).
 tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" --sha "$SHA" --dry-run < input.ndjson
 ```
 
 - `--repo` and `--pr` required. `<N>` accepts any integer; no local-clone requirement.
 - `--sha` optional. When provided, the script substitutes `${SHA}` in every reply body before posting. If a body references `${SHA}` and `--sha` wasn't passed, the script errors (exit 2) before any HTTP calls.
-- `--dry-run` optional. Prints what would happen (per-thread: `comment_id`, resolved body after `${SHA}` substitution, matched `thread_id`) without POSTing or mutating.
+- `--dry-run` optional. Performs the same preflight + id-map fetch (read-only GraphQL) + `${SHA}` substitution + thread-id lookup as a real run, but makes no write calls — no reply POST, no resolve mutation. Still preserves the machine-readable stdout contract: emits exactly one NDJSON object per input line that passes preflight, with the same identifying fields a real run would emit (`comment_id`, `thread_id`, resolved body after substitution) plus `"status": "dry_run"` and `"reply_id": null`, `"resolved": false`. Because no write attempts are made, dry-run never exits `1`; if preflight + id-map fetch succeed for the whole batch it exits `0`, and if preflight fails it exits `2` (same as a real run). Exit `3` (id-map fetch failure) also applies identically.
 
 **Stdin — NDJSON, one reply per line:**
 
@@ -101,16 +102,18 @@ Each line is a standalone JSON object with exactly two fields: `comment_id` (int
 
 **Output:**
 
-- **stdout** — NDJSON status per input line, in input order. The `status` field takes one of three values:
+- **stdout** — NDJSON status per input line, in input order. The `status` field takes one of four values:
   - `"ok"` — reply POST succeeded AND resolve mutation succeeded. `reply_id` populated, `resolved: true`, no `error` field.
   - `"partial"` — reply POST succeeded but resolve mutation failed. `reply_id` populated, `resolved: false`, `error` describes the resolve failure. The thread ends up replied-but-unresolved (a safe fallback that matches the pre-tool manual state).
   - `"error"` — reply POST failed (or the thread-id lookup found no thread for this `comment_id`). `reply_id: null`, `resolved: false`, `error` describes the failure. Resolve is NOT attempted when reply fails.
+  - `"dry_run"` — only emitted when `--dry-run` is set. Preflight + id-map lookup + `${SHA}` substitution completed; no write calls made. `reply_id: null`, `resolved: false`, `thread_id` populated (the matched thread), resolved body in an additional `body` field, no `error`.
 
   Examples:
   ```json
   {"comment_id":12345,"thread_id":"PRRT_...","reply_id":99887766,"resolved":true,"status":"ok"}
   {"comment_id":23456,"thread_id":"PRRT_...","reply_id":99887767,"resolved":false,"status":"partial","error":"resolve mutation failed: <gh error>"}
   {"comment_id":67890,"thread_id":null,"reply_id":null,"resolved":false,"status":"error","error":"no thread found for comment 67890"}
+  {"comment_id":12345,"thread_id":"PRRT_...","reply_id":null,"resolved":false,"status":"dry_run","body":"Fixed in `abc1234` — commands_dir is Path"}
   ```
 - **stderr** — human-readable per-line progress (`✓ 12345 replied+resolved` / `✗ 67890 reply failed: <gh error>`) and a final `X/Y succeeded, Z failed` summary.
 - **Exit codes:**
@@ -183,8 +186,8 @@ for each NDJSON input line:
   capture reply_id on success
   if fails: emit status="error" (reply_id=null, resolved=false, error=<gh error>), continue (skip resolve)
 
-  # resolve via GraphQL
-  mutation resolveReviewThread(threadId: $THREAD_ID)
+  # resolve via GraphQL (real mutation shape — see references/graphql-snippets.md for the wrapper)
+  gh api graphql -f query='mutation($t: ID!) { resolveReviewThread(input: {threadId: $t}) { thread { id isResolved } } }' -f t="$THREAD_ID"
   if fails: emit status="partial" (reply_id set, resolved=false, error=<gh error>)
   else: emit status="ok" (reply_id set, resolved=true)
 ```
