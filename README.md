@@ -143,6 +143,12 @@ skills/
         └── case-study-clickwork-1.0.md     # concrete 24-issue run
 ```
 
+```
+tools/
+├── README.md              # Usage for helper scripts below
+└── reply-resolve.sh       # Batched reply+resolve for Copilot PR review threads
+```
+
 References load on demand, so the active context stays small even when
 you're deep in a round-5 review loop.
 
