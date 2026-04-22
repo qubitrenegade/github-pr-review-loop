@@ -161,7 +161,7 @@ query ($owner: String!, $name: String!, $number: Int!) {
 }
 ```
 
-Parse with `jq` into a JSON map `{ "<comment_id>": "<thread_id>", ... }`. Keep as a variable; look up per-thread with `jq -r --argjson id N '.[$id | tostring] // empty'`.
+Parse with `jq` into a JSON map `{ "<comment_id>": "<thread_id>", ... }`. Keep as a variable; look up per-thread with `jq -r --arg id "$COMMENT_ID" '.[$id] // empty'`. (Using `--arg` rather than `--argjson`: the map keys are strings, and a bash-substituted `$COMMENT_ID` is a string too, so `--arg` is the matching pair. `--argjson` would require an unquoted number literal and an extra `| tostring` on lookup.)
 
 If `totalCount > 100`: print `ERROR: PR has >100 threads; v1 of this script doesn't paginate. File an issue if you hit this.` to stderr and exit 3.
 
