@@ -4,7 +4,7 @@
 
 **Goal:** Apply the three docs edits from `docs/superpowers/specs/2026-04-20-outside-the-repo-blockers-design.md` to `stop-conditions.md` so the skill covers blockers outside the repo (account/org/DNS/vendor settings) with a 5-minute check, heuristics, and escalation template.
 
-**Architecture:** Single-file docs PR. Three coordinated edits to `skills/github-pr-review-loop/references/stop-conditions.md`: a new peer section between Failure-mode stops and Anti-patterns, a cross-reference pointer appended to Failure-mode stops, and a matching Contents TOC entry. No code changes.
+**Architecture:** Single skill-file edit; docs-only PR with this plan as audit trail. Three coordinated edits to `skills/github-pr-review-loop/references/stop-conditions.md`: a new peer section between Failure-mode stops and Anti-patterns, a cross-reference pointer appended to Failure-mode stops, and a matching Contents TOC entry. No code changes.
 
 **Tech Stack:** Plain Markdown. Git. `gh` CLI.
 
@@ -44,11 +44,13 @@ If any mismatch, stop and re-read the spec and file before proceeding.
 
 - [ ] **Step 2: Edit #2 — append cross-reference pointer to Failure-mode stops**
 
-Per spec stop-conditions.md change #2. Find the final paragraph of the existing `## Failure-mode stops` section (the paragraph that begins "**A high-stakes 'must fix' from Copilot that you can't verify.**" and ends with "Don't merge on hope."). Immediately after that paragraph, before the next section heading begins, append a blank line followed by:
+Per spec stop-conditions.md change #2. Find the final paragraph of the existing `## Failure-mode stops` section (the paragraph that begins "**A high-stakes 'must fix' from Copilot that you can't verify.**" and ends with "Don't merge on hope."). Immediately after that paragraph, before the next section heading begins, append a blank line followed by this pointer sentence:
 
 ```markdown
-**External-system blockers have their own section below** — when the failure isn't about the review loop or this repo's code, see "Outside-the-repo blockers." Those blockers wear infra-bug costumes but can't be fixed from a PR.
+See also: "Outside-the-repo blockers" below. When the failure isn't about the review loop or this repo's code, those blockers may look like infra bugs but can't be fixed from a PR.
 ```
+
+Note: this pointer uses a plain "See also:" lead rather than a bold "**External-system blockers…**" lead. The bold-lead form would visually mirror the Failure-mode-stops bullet items above (all of which open with `**...**`) and risk misreading as a fifth stop item. The plain lead makes it clearly a cross-reference.
 
 This edit goes first because Edit #1 will insert a new section AFTER the Failure-mode-stops section; applying Edit #2 first keeps the sequencing clear.
 
@@ -120,7 +122,7 @@ Run:
 ```bash
 grep -n "^## Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "^- Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
-grep -n "\*\*External-system blockers have their own section below\*\*" skills/github-pr-review-loop/references/stop-conditions.md
+grep -n "^See also: \"Outside-the-repo blockers\" below" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "5-minute check" skills/github-pr-review-loop/references/stop-conditions.md
 grep -n "Blocked: external" skills/github-pr-review-loop/references/stop-conditions.md
 grep -cn "^## Outside-the-repo blockers" skills/github-pr-review-loop/references/stop-conditions.md
