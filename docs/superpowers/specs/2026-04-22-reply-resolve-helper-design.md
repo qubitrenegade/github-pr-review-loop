@@ -60,7 +60,7 @@ Edits to existing files:
 - **NDJSON-on-stdin input**, not TSV. TSV breaks on multi-line reply bodies; NDJSON handles arbitrary body content cleanly via `jq` parsing. User writes one JSON object per line in a heredoc or pipes from a file.
 - **Tool-side `${SHA}` template substitution** via `--sha` flag, not shell-side pre-interpolation. Works identically for heredoc and file-on-disk inputs. Also nudges toward always citing the commit SHA explicitly (part of the Apply discipline). If `--sha` is missing but a body references `${SHA}`, the script errors before any HTTP — fail-fast prevents a raw `${SHA}` placeholder from landing in a real PR comment.
 - **Best-effort sequential per-thread**, not fail-fast batch: one thread's failure doesn't abort the batch. Within a thread, reply first then resolve; if resolve fails after reply succeeds, the thread ends up replied-but-unresolved, which is the safe default state.
-- **Dual output: stdout NDJSON (machine) + stderr human-readable (operator).** Exit code `0` = all succeeded; `1` = at least one failure. Final stderr line summarizes counts.
+- **Dual output: stdout NDJSON (machine) + stderr human-readable (operator).** Exit codes: `0` = all per-thread operations succeeded; `1` = at least one per-thread failure (but the batch ran); `2` = preflight validation error (e.g., body references `${SHA}` but `--sha` wasn't provided); `3` = precondition failure that aborts the batch before any per-thread work (id-map GraphQL call failed, or PR has >100 threads which v1 doesn't paginate). Final stderr line summarizes counts on `0` / `1`; stderr shows the error on `2` / `3` exits.
 
 ### CLI contract
 
@@ -91,7 +91,11 @@ Each line is a standalone JSON object with exactly two fields: `comment_id` (int
   {"comment_id":67890,"thread_id":null,"reply_id":null,"resolved":false,"status":"error","error":"no thread found for comment 67890"}
   ```
 - **stderr** — human-readable per-line progress (`✓ 12345 replied+resolved` / `✗ 67890 reply failed: <gh error>`) and a final `X/Y succeeded, Z failed` summary.
-- **Exit code** — `0` if every line succeeded, `1` if any failed.
+- **Exit codes:**
+  - `0` — every per-thread operation succeeded.
+  - `1` — at least one per-thread failure, but the batch ran to completion.
+  - `2` — preflight validation error (body references `${SHA}` without `--sha`, or malformed NDJSON); no HTTP calls made.
+  - `3` — precondition failure that aborts the batch before any per-thread work (id-map GraphQL call failed, or PR has >100 threads which v1 doesn't paginate).
 
 **Error semantics:**
 
@@ -150,7 +154,7 @@ for each NDJSON input line:
   if --dry-run: print what would happen (comment_id, thread_id, body), continue
 
   # reply via REST
-  POST repos/$REPO/pulls/$PR/comments/$COMMENT_ID/replies -f body="$BODY"
+  POST repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies -f body="$BODY"
   capture reply_id on success
   if fails: emit error status (reply_id=null, resolved=false), continue (skip resolve)
 
@@ -172,9 +176,9 @@ Heredoc (the common case):
 
 ```bash
 SHA=$(git rev-parse --short HEAD)
-tools/reply-resolve.sh --repo qubitrenegade/github-pr-review-loop --pr 42 --sha "$SHA" <<EOF
-{"comment_id": 3106483445, "body": "Fixed in \`\${SHA}\` — commands_dir is a Path, not a string."}
-{"comment_id": 3106483456, "body": "Fixed in \`\${SHA}\` — same fix applied."}
+tools/reply-resolve.sh --repo qubitrenegade/github-pr-review-loop --pr 42 --sha "$SHA" <<'EOF'
+{"comment_id": 3106483445, "body": "Fixed in `${SHA}` — commands_dir is a Path, not a string."}
+{"comment_id": 3106483456, "body": "Fixed in `${SHA}` — same fix applied."}
 EOF
 ```
 
