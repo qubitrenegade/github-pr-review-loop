@@ -76,7 +76,12 @@ REPO="<owner>/<repo>"    # e.g. qubitrenegade/github-pr-review-loop
 PR_NUM="<N>"             # e.g. 42
 SHA="<hash>"             # optional, omit if no ${SHA} in any body
 
-tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" [--sha "$SHA"] [--dry-run] < input.ndjson
+# Basic invocation (required flags only)
+tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" < input.ndjson
+
+# With optional flags: --sha enables ${SHA} templating; --dry-run
+# prints what would happen without making any HTTP calls
+tools/reply-resolve.sh --repo "$REPO" --pr "$PR_NUM" --sha "$SHA" --dry-run < input.ndjson
 ```
 
 - `--repo` and `--pr` required. `<N>` accepts any integer; no local-clone requirement.
@@ -243,7 +248,7 @@ The `## Batching multiple findings into one push` section lays out the batch pat
 ```markdown
 ## Batching reply + resolve with `tools/reply-resolve.sh`
 
-The raw `/comments/<id>/replies` POST and `resolveReviewThread` mutation snippets above are the primitives. For batches (more than two threads per round), `tools/reply-resolve.sh` at the repo root wraps both into a single per-thread transaction, handles the REST `comment_id` → GraphQL `thread_id` lookup internally, and supports `${SHA}` templating. See `tools/README.md` for usage.
+The raw `repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies` POST and `resolveReviewThread` mutation snippets above are the primitives. For batches (more than two threads per round), `tools/reply-resolve.sh` at the repo root wraps both into a single per-thread transaction, handles the REST `comment_id` → GraphQL `thread_id` lookup internally, and supports `${SHA}` templating. See `tools/README.md` for usage.
 ```
 
 ### README.md (root) update
