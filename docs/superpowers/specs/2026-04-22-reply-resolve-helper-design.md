@@ -89,9 +89,15 @@ Each line is a standalone JSON object with exactly two fields: `comment_id` (int
 
 **Output:**
 
-- **stdout** — NDJSON status per input line, in input order:
+- **stdout** — NDJSON status per input line, in input order. The `status` field takes one of three values:
+  - `"ok"` — reply POST succeeded AND resolve mutation succeeded. `reply_id` populated, `resolved: true`, no `error` field.
+  - `"partial"` — reply POST succeeded but resolve mutation failed. `reply_id` populated, `resolved: false`, `error` describes the resolve failure. The thread ends up replied-but-unresolved (a safe fallback that matches the pre-tool manual state).
+  - `"error"` — reply POST failed (or the preflight id-map lookup found no thread for this `comment_id`). `reply_id: null`, `resolved: false`, `error` describes the failure. Resolve is NOT attempted when reply fails.
+
+  Examples:
   ```json
   {"comment_id":12345,"thread_id":"PRRT_...","reply_id":99887766,"resolved":true,"status":"ok"}
+  {"comment_id":23456,"thread_id":"PRRT_...","reply_id":99887767,"resolved":false,"status":"partial","error":"resolve mutation failed: <gh error>"}
   {"comment_id":67890,"thread_id":null,"reply_id":null,"resolved":false,"status":"error","error":"no thread found for comment 67890"}
   ```
 - **stderr** — human-readable per-line progress (`✓ 12345 replied+resolved` / `✗ 67890 reply failed: <gh error>`) and a final `X/Y succeeded, Z failed` summary.
@@ -104,7 +110,7 @@ Each line is a standalone JSON object with exactly two fields: `comment_id` (int
 **Error semantics:**
 
 - Per-thread best-effort: attempt reply → attempt resolve → move to next. One failure doesn't abort the batch.
-- Within one thread: reply first; if reply fails, skip resolve and mark error. If reply succeeds but resolve fails, emit partial-success status line with `resolved: false`.
+- Within one thread: reply first; if reply fails, skip resolve and emit `"status":"error"`. If reply succeeds but resolve fails, emit `"status":"partial"` with `reply_id` populated and `resolved: false`. If both succeed, emit `"status":"ok"`. Both `"partial"` and `"error"` count as per-thread failures for exit-code purposes (exit 1 if any).
 - `--sha` missing but `${SHA}` referenced anywhere in input: exit 2 before any HTTP.
 - Id-map GraphQL fetch failure: exit 3 before any per-thread attempts.
 
@@ -163,12 +169,12 @@ for each NDJSON input line:
   # reply via REST
   POST repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies -f body="$BODY"
   capture reply_id on success
-  if fails: emit error status (reply_id=null, resolved=false), continue (skip resolve)
+  if fails: emit status="error" (reply_id=null, resolved=false, error=<gh error>), continue (skip resolve)
 
   # resolve via GraphQL
   mutation resolveReviewThread(threadId: $THREAD_ID)
-  if fails: emit partial status (reply_id set, resolved=false, error=...)
-  else: emit success status (reply_id set, resolved=true)
+  if fails: emit status="partial" (reply_id set, resolved=false, error=<gh error>)
+  else: emit status="ok" (reply_id set, resolved=true)
 ```
 
 **5. Final summary on stderr**
